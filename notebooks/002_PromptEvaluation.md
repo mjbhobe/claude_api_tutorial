@@ -196,3 +196,300 @@ Please provide a solution to the following task:
 An evaluation dataset contains inputs that we'll feed into our prompt. For each combination of prompt and input, we'll run the prompt and analyze the results.
 
 Our dataset will be an array of JSON objects, where each object contains a "task" property describing what we want Claude to accomplish. We can either create this dataset by hand or generate it automatically using Claude.
+
+<p align="center">
+  <img src="images/generate_eval_datasets.png" alt="Generate Eval Datasets" width="450" height="250">
+</p>
+
+Since we're generating test data, this is a perfect opportunity to use a faster model like Haiku instead of the full Claude model.
+
+### Generating Test Data with Code
+
+Let's create a function that automatically generates our test dataset. First, we'll need our helper functions for working with Claude:
+
+```python
+def add_user_message(messages, text):
+    user_message = {"role": "user", "content": text}
+    messages.append(user_message)
+
+def add_assistant_message(messages, text):
+    assistant_message = {"role": "assistant", "content": text}
+    messages.append(assistant_message)
+
+def chat(messages, system=None, temperature=1.0, stop_sequences=[]):
+    params = {
+        "model": model,
+        "max_tokens": 1000,
+        "messages": messages,
+        # this will work with older (<1.1.0) SDK
+        # "temperature": temperature,
+        # ------------------------------
+        # for 1.1.0+ SDK use the following
+        "extra_body": {"temperature": temperature},
+    }
+    if system:
+        params["system"] = system
+    if stop_sequences:
+        params["stop_sequences"] = stop_sequences
+    
+    response = client.messages.create(**params)
+    return response.content[0].text
+```
+
+Now we'll create our dataset generation function:
+
+````python
+def generate_dataset():
+    prompt = """
+Generate an evaluation dataset for a prompt evaluation. The dataset will be used to evaluate prompts that generate Python, JSON, or Regex specifically for AWS-related tasks. Generate an array of JSON objects, each representing task that requires Python, JSON, or a Regex to complete.
+
+Example output:
+```json
+[
+  {
+    "task": "Description of task",
+  },
+  ...additional
+]
+```
+
+* Focus on tasks that can be solved by writing a single Python function, a single JSON object, or a single regex
+* Focus on tasks that do not require writing much code
+
+Please generate 3 objects.
+"""
+````
+
+To properly parse the JSON response, we'll use prefilling and stop sequences:
+
+```python
+    messages = []
+    add_user_message(messages, prompt)
+    add_assistant_message(messages, "```json")
+    text = chat(messages, stop_sequences=["```"])
+    return json.loads(text)
+```
+
+### Testing the Dataset Generation
+
+Let's run our function and see what kind of test cases we get:
+
+```python
+dataset = generate_dataset()
+print(dataset)
+```
+
+This should return three different test cases covering our target outputs - Python functions, JSON configurations, and regular expressions for AWS-specific tasks.
+
+### Saving the Dataset
+
+Once we have our dataset, we'll save it to a file so we can easily load it later during evaluation:
+
+```python
+with open('dataset.json', 'w') as f:
+    json.dump(dataset, f, indent=2)
+```
+
+This creates a `dataset.json` file in the same directory as your notebook, containing your list of tasks ready for prompt evaluation.
+
+With this foundation in place, you now have a systematic way to generate test data for evaluating how well your prompts perform across different types of AWS-related coding tasks.
+
+## Running the Eval
+
+Now that we have our evaluation dataset ready, it's time to build the core evaluation pipeline. This involves taking each test case, merging it with our prompt, feeding it to Claude, and then grading the results.
+
+The evaluation process follows a clear workflow: we take our dataset of test cases, combine each one with our prompt template, send it to Claude for processing, and then evaluate the output using a grader system.
+
+### Building the Core Functions
+
+The evaluation pipeline consists of three main functions, each with a specific responsibility. Let's start with the simplest one - the function that handles individual prompts.
+
+#### The `run_prompt` Function
+
+This function takes a test case and merges it with our prompt template:
+
+```python
+def run_prompt(test_case):
+    """Merges the prompt and test case input, then returns the result"""
+    prompt = f"""
+Please solve the following task:
+
+{test_case["task"]}
+"""
+    
+    messages = []
+    add_user_message(messages, prompt)
+    output = chat(messages)
+    return output
+```
+
+Right now, we're keeping the prompt extremely simple. We're not including any formatting instructions, so Claude will likely return more verbose output than we need. We'll refine this later as we iterate on our prompt design.
+
+#### The `run_test_case` Function
+
+This function orchestrates running a single test case and grading the result:
+
+```python
+def run_test_case(test_case):
+    """Calls run_prompt, then grades the result"""
+    output = run_prompt(test_case)
+    
+    # TODO - Grading
+    score = 10
+    
+    return {
+        "output": output,
+        "test_case": test_case,
+        "score": score
+    }
+```
+
+For now, we're using a hardcoded score of `10`. The grading logic is where we'll spend significant time in upcoming sections, but this placeholder lets us test the overall pipeline.
+
+#### The `run_eval` Function
+
+This function coordinates the entire evaluation process:
+
+```python
+def run_eval(dataset):
+    """Loads the dataset and calls run_test_case with each case"""
+    results = []
+    
+    for test_case in dataset:
+        result = run_test_case(test_case)
+        results.append(result)
+    
+    return results
+```
+
+This function processes every test case in our dataset and collects all the results into a single list.
+
+#### Running the Evaluation
+
+To execute our evaluation pipeline, we load our dataset and run it through our functions:
+
+```python
+with open("dataset.json", "r") as f:
+    dataset = json.load(f)
+
+results = run_eval(dataset)
+```
+
+The first time you run this, expect it to take some time - even with Claude Haiku, it can take around `30` seconds to process a full dataset. We'll cover optimization techniques later.
+
+#### Examining the Results
+
+The evaluation returns a structured JSON array where each object represents one test case result:
+
+```python
+print(json.dumps(results, indent=2))
+```
+
+Each result contains three key pieces of information:
+
+* `output`: The complete response from Claude
+* `test_case`: The original test case that was processed
+* `score`: The evaluation score (currently hardcoded)
+
+As you can see in the output, Claude generates quite verbose responses since we haven't provided specific formatting instructions yet. This is exactly the kind of issue we'll address as we refine our prompts.
+
+### What We've Accomplished
+
+At this point, we've successfully built the core evaluation pipeline. We can take our dataset, process it through Claude, and collect structured results. The major missing piece is the grading system - that hardcoded score of 10 needs to be replaced with actual evaluation logic.
+
+This pipeline represents the foundation of most AI evaluation systems. While it may seem simple, you've just built the majority of what an eval pipeline actually does. The complexity comes in the details - better prompts, sophisticated grading, and performance optimizations.
+
+Next, we'll dive into the critical topic of graders, which will transform our hardcoded scores into meaningful evaluations of Claude's performance.
+
+## Model Based Grading
+
+When building prompt evaluation workflows, grading systems provide objective signals about output quality. A grader takes model output and returns some kind of measurable feedback - typically a number between 1 and 10, where 10 represents high quality and 1 represents poor quality.
+
+### Types of Graders
+
+<p align="center">
+  <img src="images/types_of_graders.png" alt="Types Of Graders" width="450" height="250">
+</p>
+
+There are three main approaches to grading model outputs:
+
+* `Code graders` - Programmatically evaluate outputs using custom logic
+* `Model graders` - Use another AI model to assess the quality
+* `Human graders` - Have people manually review and score outputs
+
+#### Code Graders
+
+Code graders let you implement any programmatic check you can imagine. Common uses include:
+
+* Checking output length
+* Verifying output does/doesn't have certain words
+* Syntax validation for JSON, Python, or regex
+* Readability scores
+
+The only requirement is that your code returns some usable signal - usually a number between 1 and 10.
+
+#### Model Graders
+
+Model graders feed your original output into another API call for evaluation. This approach offers tremendous flexibility for assessing:
+
+* Response quality
+* Quality of instruction following
+* Completeness
+* Helpfulness
+* Safety
+
+#### Human Graders
+
+Human graders provide the most flexibility but are time-consuming and tedious. They're useful for evaluating:
+
+* General response quality
+* Comprehensiveness
+* Depth
+* Conciseness
+* Relevance
+
+#### Defining Evaluation Criteria
+
+<p align="center">
+  <img src="images/evaluation_criteria.png" alt="Evaluation Criteria" width="450" height="250">
+</p>
+
+Before implementing any grader, you need clear evaluation criteria. For a code generation prompt, you might focus on:
+
+* `Format` - Should return only Python, JSON, or Regex without explanation
+* `Valid Syntax` - Produced code should have valid syntax
+* `Task Following` - Response should directly address the user's task with accurate code.
+
+<p align="center">
+  <img src="images/code_grading_criteria.png" alt="Code Grading Criteria" width="450" height="250">
+</p>
+
+The first two criteria work well with code graders, while task following is better suited for model graders due to their flexibility.
+
+## Implementing a Model Grader
+
+Here's how to build a model grader function:
+
+```python
+def grade_by_model(test_case, output):
+    # Create evaluation prompt
+    eval_prompt = """
+    You are an expert code reviewer. Evaluate this AI-generated solution.
+    
+    Task: {task}
+    Solution: {solution}
+    
+    Provide your evaluation as a structured JSON object with:
+    - "strengths": An array of 1-3 key strengths
+    - "weaknesses": An array of 1-3 key areas for improvement  
+    - "reasoning": A concise explanation of your assessment
+    - "score": A number between 1-10
+    """
+    
+    messages = []
+    add_user_message(messages, eval_prompt)
+    add_assistant_message(messages, "```json")
+    
+    eval_text = chat(messages, stop_sequences=["```"])
+    return json.loads(eval_text)
+```
