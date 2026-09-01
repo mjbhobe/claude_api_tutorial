@@ -1,11 +1,11 @@
 [
   {
-    "task": "Write a Python function that extracts the AWS region from an S3 bucket ARN (e.g., 'arn:aws:s3:::my-bucket'). The function should return the region if present, or 'us-east-1' as default if the ARN doesn't contain region information."
+    "task": "Write a Python function that parses an AWS CloudFormation template (JSON string) and returns a list of all resource logical IDs."
   },
   {
-    "task": "Create a JSON object representing an AWS IAM policy that allows read-only access to all objects in an S3 bucket named 'my-data-bucket'. The policy should include the appropriate actions (s3:GetObject, s3:ListBucket) and resources."
+    "task": "Create a JSON object representing an AWS IAM policy that allows read-only access to all objects in an S3 bucket named 'my-bucket'."
   },
   {
-    "task": "Write a regular expression that matches valid AWS EC2 security group IDs. Valid IDs follow the format 'sg-' followed by exactly 8 or 17 hexadecimal characters (e.g., 'sg-0a1b2c3d' or 'sg-0a1b2c3d4e5f6a7b8')."
+    "task": "Write a regular expression that matches valid AWS EC2 instance IDs (format: i-followed by hexadecimal characters, 8 or 17 characters long)."
   }
 ]

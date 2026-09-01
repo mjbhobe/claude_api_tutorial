@@ -42,8 +42,9 @@ Options 1 and 2 are common traps that all engineers fall into, myself included. 
 
 The reality is that when you deploy a prompt to production, users will interact with it in ways you never anticipated. What seemed like a solid prompt during your limited testing can quickly break down when faced with the full variety of real-world inputs.
 
-The _Evaluation-First Approach_
-Option 3 represents a more systematic approach to prompt development. By running your prompt through an evaluation pipeline, you get objective metrics about its performance across a broader range of test cases. This data-driven approach lets you:
+The **_Evaluation-First Approach_** Option 3 represents a more systematic approach to prompt development. By running your prompt through an evaluation pipeline, you get objective metrics about its performance across a broader range of test cases. 
+
+This data-driven approach lets you:
 
 * Identify weaknesses before they become production issues
 * Compare different prompt versions objectively
@@ -71,10 +72,6 @@ Please answer the user's question:
 {question}
 """
 ```
-
-<p align="center">
-  <img src="images/initial_prompt_draft.png" alt="Initial Prompt Draft" width="450" height="150">
-</p>
 
 This basic prompt will serve as our baseline for testing and improvement.
 
@@ -129,7 +126,8 @@ The average score across all questions gives you an objective measurement:
 
 $$\frac{10 + 4 + 9}{3} \approx 7.67$$
 
-Step 5: Change Prompt and Repeat
+### Step 5: Change Prompt and Repeat
+
 Now that you have a baseline score, you can modify your prompt and run the entire process again to see if your changes improve performance.
 
 <p align="center">
@@ -281,6 +279,23 @@ print(dataset)
 
 This should return three different test cases covering our target outputs - Python functions, JSON configurations, and regular expressions for AWS-specific tasks.
 
+Here is what the output could look like:
+
+```json
+[
+  {
+    "task": "Write a Python function that extracts the AWS region from an S3 bucket ARN (e.g., 'arn:aws:s3:::my-bucket'). The function should return the region if present, or 'us-east-1' as default if the ARN doesn't contain region information."
+  },
+  {
+    "task": "Create a JSON object representing an AWS IAM policy that allows read-only access to all objects in an S3 bucket named 'my-data-bucket'. The policy should include the appropriate actions (s3:GetObject, s3:ListBucket) and resources."
+  },
+  {
+    "task": "Write a regular expression that matches valid AWS EC2 security group IDs. Valid IDs follow the format 'sg-' followed by exactly 8 or 17 hexadecimal characters (e.g., 'sg-0a1b2c3d' or 'sg-0a1b2c3d4e5f6a7b8')."
+  }
+]
+
+```
+
 ### Saving the Dataset
 
 Once we have our dataset, we'll save it to a file so we can easily load it later during evaluation:
@@ -385,21 +400,14 @@ The evaluation returns a structured JSON array where each object represents one 
 print(json.dumps(results, indent=2))
 ```
 
-Each result contains three key pieces of information:
+Each result will three key pieces of information:
 
 * `output`: The complete response from Claude
 * `test_case`: The original test case that was processed
 * `score`: The evaluation score (currently hardcoded)
 
-As you can see in the output, Claude generates quite verbose responses since we haven't provided specific formatting instructions yet. This is exactly the kind of issue we'll address as we refine our prompts.
+Claude generates quite verbose responses since we haven't provided specific formatting instructions yet. This is exactly the kind of issue we'll address as we refine our prompts.
 
-### What We've Accomplished
-
-At this point, we've successfully built the core evaluation pipeline. We can take our dataset, process it through Claude, and collect structured results. The major missing piece is the grading system - that hardcoded score of 10 needs to be replaced with actual evaluation logic.
-
-This pipeline represents the foundation of most AI evaluation systems. While it may seem simple, you've just built the majority of what an eval pipeline actually does. The complexity comes in the details - better prompts, sophisticated grading, and performance optimizations.
-
-Next, we'll dive into the critical topic of graders, which will transform our hardcoded scores into meaningful evaluations of Claude's performance.
 
 ## Model Based Grading
 
@@ -460,10 +468,6 @@ Before implementing any grader, you need clear evaluation criteria. For a code g
 * `Valid Syntax` - Produced code should have valid syntax
 * `Task Following` - Response should directly address the user's task with accurate code.
 
-<p align="center">
-  <img src="images/code_grading_criteria.png" alt="Code Grading Criteria" width="450" height="250">
-</p>
-
 The first two criteria work well with code graders, while task following is better suited for model graders due to their flexibility.
 
 ## Implementing a Model Grader
@@ -493,3 +497,53 @@ def grade_by_model(test_case, output):
     eval_text = chat(messages, stop_sequences=["```"])
     return json.loads(eval_text)
 ```
+
+The key insight is asking for strengths, weaknesses, and reasoning alongside the score. Without this context, models tend to default to middling scores around 6.
+
+### Integrating Grading into Your Workflow
+
+Update your test case runner to call the grader:
+
+```python
+def run_test_case(test_case):
+    """Calls run_prompt, then grades the result"""
+    output = run_prompt2(test_case)
+
+    # TODO - Grading
+    # score = 10
+    model_grade = grade_by_model(test_case, output)
+
+    score = model_grade["score"]
+    reasoning = model_grade["reasoning"]
+
+    return {
+        "output": output,
+        "test_case": test_case,
+        "score": score,
+        "reasoning": reasoning,
+    }
+```
+
+And integrate into the workflow
+
+```python
+from statistics import mean
+
+
+def run_eval2(dataset):
+    """Loads the dataset and calls run_test_case with each case"""
+    results = []
+
+    for test_case in dataset:
+        result = run_test_case2(test_case)
+        results.append(result)
+
+    average_score = mean([result["score"] for result in results])
+
+    return results, average_score
+```
+
+This gives you an objective metric to track as you iterate on your prompt. While model graders can be somewhat capricious, they provide a consistent baseline for measuring improvements.
+
+
+
