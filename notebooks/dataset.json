@@ -1,11 +1,18 @@
 [
   {
-    "task": "Write a Python function that parses an AWS CloudFormation template (JSON string) and returns a list of all resource logical IDs."
-  },
-  {
-    "task": "Create a JSON object representing an AWS IAM policy that allows read-only access to all objects in an S3 bucket named 'my-bucket'."
-  },
-  {
-    "task": "Write a regular expression that matches valid AWS EC2 instance IDs (format: i-followed by hexadecimal characters, 8 or 17 characters long)."
+    "prompt_inputs": {
+      "height": "178 cm",
+      "weight": "68 kg",
+      "goal": "Marathon training - high carbohydrate loading for endurance performance",
+      "restrictions": "Vegetarian"
+    },
+    "solution_criteria": [
+      "Meal plan includes 4-5 meals/snacks distributed throughout the day",
+      "Emphasizes high carbohydrate intake (60-70% of calories) suitable for marathon training",
+      "All meals are vegetarian with no meat, poultry, or fish",
+      "Provides approximately 3000-3500 calories appropriate for a 68kg endurance athlete"
+    ],
+    "task_description": "Write a compact, concise 1 day meal plan for a single athlete",
+    "scenario": "Testing with a high-endurance athlete (marathon runner) requiring high caloric intake and carbohydrate loading, with specific performance goals and dietary restrictions (vegetarian)"
   }
 ]
