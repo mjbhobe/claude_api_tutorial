@@ -1,23 +1,23 @@
 [
   {
-    "output": "# One-Day Meal Plan for Marathon Training Athlete\n\nHere is a one-day meal plan for an athlete training for a marathon with vegetarian dietary restrictions:\n\n* **Calorie Target:** Approximately 3,200 calories\n* **Macronutrient Breakdown:** Protein (110g), Fat (85g), Carbs (480g)\n\n## Meal Plan:\n\n* **Breakfast (7:00 AM):** Oatmeal (100g dry weight) with banana (150g), ground flaxseed (15g), and soy milk (240ml).\n    * Protein: 12g, Fat: 8g, Carbs: 85g\n\n* **Mid-Morning Snack (10:00 AM):** Whole wheat bread (60g) with peanut butter (30g) and honey (20g).\n    * Protein: 10g, Fat: 16g, Carbs: 55g\n\n* **Lunch (1:00 PM):** Chickpea and vegetable curry with chickpeas (150g cooked), onions (80g), tomatoes (100g), spinach (100g), and coconut milk (100ml). Served with brown rice (150g cooked).\n    * Protein: 18g, Fat: 12g, Carbs: 85g\n\n* **Pre-Workout Snack (3:30 PM):** Energy bar (50g) made with oats and dates, plus sports drink (500ml) with electrolytes and 30g carbohydrates.\n    * Protein: 6g, Fat: 5g, Carbs: 60g\n\n* **Dinner (7:00 PM):** Grilled tofu steak (200g) with sweet potato (250g baked), steamed broccoli (150g), and olive oil (15ml).\n    * Protein: 28g, Fat: 18g, Carbs: 70g\n\n* **Evening Snack (9:00 PM):** Greek yogurt (200g, non-fat) with granola (40g) and berries (80g).\n    * Protein: 18g, Fat: 6g, Carbs: 50g\n\n**Hydration Note:** Drink 2.5-3 liters of water throughout the day, increasing intake on training days.\n\nThis meal plan emphasizes high carbohydrate intake for marathon endurance, includes adequate plant-based protein sources, and provides sustained energy for long-distance training.",
+    "output": "# Marathon Race Day Nutrition Strategy\n\n## Pre-Race Carb Loading (3-7 days before)\n\n**Daily intake:** 8-12g carbs/kg body weight (544-816g for this person)\n- **Pasta, rice, potatoes:** 3-4 large servings daily\n- **Bread & cereals:** 6-8 slices whole grain bread\n- **Fruits:** Bananas, dates, berries (400-500g)\n- **Reduce fiber & fat** to minimize GI distress\n\n---\n\n## Race Day Nutrition (3000+ calories)\n\n### **2-3 hours before start:**\n- 200-300g carbs + moderate protein, low fat/fiber\n- *Example: 2 bagels with peanut butter, banana, sports drink*\n- Hydrate: 400-600ml water\n\n### **During race (carbs every 45-60 min):**\n| Time | Carb Source | Amount | Hydration |\n|------|-------------|--------|-----------|\n| 0-45 min | Sports drink | 200-300ml | Plain water |\n| 45-90 min | Energy gel + water | 25-30g carbs | 200ml water |\n| Every 45 min | Sports drink OR gels | 30-60g carbs/hour | 400-800ml/hour |\n\n**Carb options per hour:**\n- 1-1.5 liters sports drink (6-8%), OR\n- 2-3 energy gels + water, OR\n- Energy bars + electrolyte drink\n\n### **Hydration strategy:**\n- **Drink to thirst** but aim for: 400-800ml/hour (adjust for heat/sweat rate)\n- **Electrolytes:** 500-700mg sodium per hour\n- **Avoid:** Hyponatremia (over-hydrating plain water)\n\n### **Post-race (recovery):**\n- 1.2g carbs/kg within 30 min \u2192 82g carbs\n- *Example: Chocolate milk, banana, sports drink*\n\n---\n\n## Key Tips\n\u2713 **Test everything** during training runs  \n\u2713 **Sodium aids hydration** retention  \n\u2713 **Individual sweat rates vary**\u2014practice your plan  \n\u2713 **Mix carb sources** (drinks + gels) for GI comfort\n\nWould you like a specific hourly race-day meal plan?",
     "test_case": {
       "prompt_inputs": {
         "height": "178 cm",
         "weight": "68 kg",
-        "goal": "Marathon training - high carbohydrate loading for endurance performance",
-        "restrictions": "Vegetarian"
+        "goal": "Marathon race day nutrition - carbohydrate loading and hydration strategy for 3000+ calorie intake",
+        "restrictions": "None"
       },
       "solution_criteria": [
-        "Meal plan includes 4-5 meals/snacks distributed throughout the day",
-        "Emphasizes high carbohydrate intake (60-70% of calories) suitable for marathon training",
-        "All meals are vegetarian with no meat, poultry, or fish",
-        "Provides approximately 3000-3500 calories appropriate for a 68kg endurance athlete"
+        "Meal plan totals 3000+ calories with emphasis on carbohydrates (55-65% of total intake)",
+        "Includes pre-race hydration and electrolyte strategy throughout the day",
+        "Provides 4-6 eating occasions spaced appropriately for digestion and energy availability",
+        "All meals and snacks are practical, easy-to-digest options suitable for race-day preparation"
       ],
       "task_description": "Write a compact, concise 1 day meal plan for a single athlete",
-      "scenario": "Testing with a high-endurance athlete (marathon runner) requiring high caloric intake and carbohydrate loading, with specific performance goals and dietary restrictions (vegetarian)"
+      "scenario": "Testing with a high-endurance athlete (marathon runner) requiring 3000+ calories with specific carbohydrate loading and hydration strategy for pre-race day"
     },
-    "score": 9,
-    "reasoning": "The solution fully satisfies all mandatory requirements with clear daily caloric total, detailed macronutrient breakdown, and 6 well-distributed meals with exact foods, portions, and timing. It meets the secondary criteria: 6 meals/snacks (exceeds 4-5 requirement), 60% carbohydrate intake (within 60-70% range), 100% vegetarian compliance, and 3,200 calories (within acceptable range for 68kg athlete, though slightly conservative). The meal plan is practical, balanced, and appropriately designed for marathon training. Minor weaknesses exist in caloric density and protein quantity, but these do not constitute violations of stated criteria."
+    "score": 3,
+    "reasoning": "The solution provides excellent strategic guidance on marathon nutrition principles, hydration, and electrolyte management. However, it fundamentally fails to deliver what was requested: a compact, concise 1-day meal plan. The mandatory requirements explicitly demand: (1) daily caloric total, (2) macronutrient breakdown, and (3) meals with exact foods, portions, and timing. The solution provides none of these in concrete form. Instead, it offers general recommendations and ranges without synthesizing them into an actual meal plan. While the content is technically sound and addresses secondary criteria (hydration strategy, carb emphasis, digestibility), the absence of mandatory deliverables (no total calories stated, no macro percentages calculated, no specific hourly meal schedule with portions) constitutes automatic failure per the scoring guidelines."
   }
 ]
