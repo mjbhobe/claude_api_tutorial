@@ -31,7 +31,12 @@ class PromptEvaluator:
 
         return result.replace("{{", "{").replace("}}", "}")
 
-    def generate_unique_ideas(self, task_description, prompt_inputs_spec, num_cases):
+    def generate_unique_ideas(
+        self,
+        task_description,
+        prompt_inputs_spec,
+        num_cases,
+    ):
         """Generate a list of unique ideas for test cases based on the task description"""
 
         prompt = """
@@ -46,10 +51,12 @@ class PromptEvaluator:
         {prompt_inputs_spec}
         </prompt_inputs>
         
-        Each idea should represent a distinct scenario or example that tests different aspects of the task.
+        Each idea should represent a distinct scenario or example that tests different aspects 
+        of the task.
         
         Output Format:
-        Provide your response as a structured JSON array where each item is a brief description of the idea.
+        Provide your response as a structured JSON array where each item is a brief description of 
+        the idea.
         
         Example:
         ```json
