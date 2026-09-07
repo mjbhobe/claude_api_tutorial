@@ -563,17 +563,193 @@ for i in range(3):
 You could see something like this:
 
 <p align="center">
-  <img src="images/response_with_temperature.png" alt="Choosing Temperature" width="650" height="600">
+  <img src="images/response_with_temperature.png" alt="Choosing Temperature" />
 </p>
 
+## Response Streaming
 
+When building chat applications with Claude, there's a significant user experience challenge: **responses can take 10-30 seconds to generate, leaving users staring at a loading spinner**. The solution is `response streaming`, which lets users see text appear chunk by chunk as Claude generates it, creating a much more responsive feel.
 
+### The Problem with Standard Responses
 
+In a typical chat setup, your server sends a user message to Claude and _waits for the complete response_ before sending anything back to the client. This creates an awkward delay where users have no feedback that anything is happening.
 
+### How Streaming Works
 
+With streaming enabled, Claude _immediately sends back an initial response_ indicating it has received your request and is starting to generate text. Then you receive a series of events, each containing a small piece of the overall response.
 
+<p align="center">
+  <img src="images/stream3.png" alt="With Streaming" width="450" height="300">
+</p>
 
+Your server can forward these text chunks to your client application as they arrive, allowing users to see the response building up word by word. All of these events are part of a single request to Claude.
 
+### Understanding Stream Events
 
+When you enable streaming, Claude sends back several types of events:
 
+* `MessageStart` - A new message is being sent
+* `ContentBlockStart` - Start of a new block containing text, tool use, or other content
+* `ContentBlockDelta` - Chunks of the actual generated text.
+* `ContentBlockStop` - The current content block has been completed
+* `MessageDelta` - The current message is complete
+* `MessageStop` - End of information about the current message
+
+<p align="center">
+  <img src="images/stream_events.png" alt="Streaming Events" width="450" height="300">
+</p>
+
+The `ContentBlockDelta` events contain the actual generated text that you'll want to display to users. You'll keep getting this event until complete Claude stops generating text.You'll keep getting this event until complete Claude stops generating text.
+
+### Basic Streaming Implementation
+
+To enable streaming, add stream=True to your messages.create call:
+
+```python
+messages = []
+add_user_message(messages, "Write a 1 sentence description of a fake database")
+
+response_stream = client.messages.create(
+    model=MODEL, 
+    max_tokens=MAX_TOKENS, 
+    messages=messages, 
+    stream=True,
+)
+
+for event in response_stream:
+    print(event)
+```
+
+#### Simplified Text Streaming
+
+Rather than manually parsing events, you can use the SDK's simplified streaming interface that extracts just the text content, like so:
+
+```python
+messages = []
+
+add_user_message(messages, "Write a 1 sentence description of a fake database")
+
+with client.messages.stream(
+    model=MODEL, max_tokens=MAX_TOKENS, messages=messages
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="")
+```
+
+This approach automatically filters out everything except the actual text content, which is usually what you need for displaying responses to users. You will see this response "build incrementally" on screen.
+
+<p align="center">
+  <img src="images/streaming1.png" alt="Streaming Events">
+</p>
+
+#### Getting the Complete Message
+
+While streaming individual chunks is great for user experience, you often need the complete message for storage or further processing. After streaming completes, you can get the assembled final message:
+
+```python
+messages = []
+add_user_message(messages, "Write a 1 sentence description of a fake database")
+
+with client.messages.stream(
+    model=MODEL, max_tokens=MAX_TOKENS, messages=messages
+) as stream:
+    for text in stream.text_stream:
+        # display the chunk as above
+        print(text, end="")
+
+    # Get the complete message for database storage
+    final_message = stream.get_final_message()
+
+print(f"\n========\nFinal message:\n {final_message.content[0].text}")
+```
+
+<p align="center">
+  <img src="images/streaming2.png" alt="Streaming Events">
+</p>
+
+This gives you the best of both worlds: real-time streaming for users and a complete message object for your application logic.
+
+## Structured Data
+
+When you need Claude to generate structured data like JSON, Python code, or bulleted lists, you'll often run into a common problem: Claude wants to be helpful and add explanatory text around your content. While this is usually great, sometimes you need just the raw data with nothing else.
+
+Consider building a web app that generates email filter rules — the kind you'd set up in Gmail or Outlook to automatically sort incoming mail. Users enter a description, click generate, and expect to see clean JSON they can immediately copy and use. If Claude returns the JSON wrapped in markdown code blocks with explanatory text, users can't simply copy the entire response - they have to manually select just the JSON portion.
+
+### The Problem with Default Responses
+
+By default, when you ask Claude to generate JSON, you might get something like this:
+
+````
+
+```json
+{
+  "from": ["billing@streamingservice.com"],
+  "subject_contains": ["invoice", "receipt"],
+  "action": "move_to_folder",
+  "folder": "Receipts"
+}
+```
+
+This rule moves any email from your streaming service that mentions an invoice or receipt into your Receipts folder.
+
+````
+
+The JSON is correct, but it's wrapped in markdown formatting (```json ... ```) and includes explanatory text `This rule...` below it. For a web app where users need to copy the raw JSON, this creates friction in the user experience.
+
+### The Solution?: Assistant Message Prefilling + Stop Sequences
+
+You can combine assistant message prefilling with stop sequences to get exactly the content you want. Here's how it works:
+
+```python
+messages = []
+
+add_user_message(messages, "Generate a very short email filter rule as json")
+add_assistant_message(messages, "```json")
+
+text = chat(messages, stop_sequences=["```"])
+```
+
+This technique works because:
+
+* The user message tells Claude what to generate
+* The prefilled assistant message makes Claude think it already started a markdown code block
+* Claude continues by writing just the JSON content
+* When Claude tries to close the code block with ```, the stop sequence immediately ends generation. 
+
+This is what you'll see:
+
+```json
+{
+  "from": ["billing@streamingservice.com"],
+  "subject_contains": ["invoice", "receipt"],
+  "action": "move_to_folder",
+  "folder": "Receipts"
+}
+```
+
+The result is clean JSON with no extra formatting.
+
+### Processing the Response
+
+You might notice some extra newline characters in the response. These are easy to handle:
+
+```python
+import json
+
+# Clean up and parse the JSON
+clean_json = json.loads(text.strip())
+```
+
+### Beyond JSON
+
+This technique isn't limited to JSON generation. Use it anytime you need structured data without commentary. It will work for:
+
+* Python code snippets
+* Bulleted lists
+* CSV data
+* Any formatted content where you want just the content, not explanations
+
+The key is identifying what Claude naturally wants to wrap your content in, then using that as your `prefill` and `stop sequence`. For code, it's usually markdown code blocks. For lists, it might be different formatting markers.
+
+This approach gives you precise control over Claude's output format, making it much easier to integrate AI-generated content into applications where clean, structured data is essential.
 
