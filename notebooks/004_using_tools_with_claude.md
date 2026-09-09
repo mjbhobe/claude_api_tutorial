@@ -719,3 +719,7 @@ The complete multi-turn conversation works like this:
 * Repeat until Claude provides a final answer
 
 This creates a seamless experience where Claude can use multiple tools across several turns to fully answer complex user requests. The conversation history maintains the complete context, allowing Claude to build upon previous tool results to provide comprehensive responses.
+
+## Fine Grained Tool Calling
+(@see: `004_tool_streaming.ipynb`)
+
