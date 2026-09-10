@@ -263,70 +263,105 @@ Now that we've covered the basics of RAG, text chunking, and embeddings, let's w
 
 ### Step 1: Chunk Your Source Text
 
-First, we take our source document and break it into manageable chunks. For this example, we'll use two simple text sections:
+First, we take our source document and break it into manageable chunks. For this example, let's assume that our document has two simple text sections:
 
-Section 1: Medical Research - "This year saw significant strides in our understanding of XDR-47, a 'bug' we have not seen before."
-Section 2: Software Engineering - "This division dedicated significant effort to studying various infection vectors in our distributed systems"
-Step 2: Generate Embeddings
+* Section 1: Medical Research - "This year saw significant strides in our understanding of XDR-47, a 'bug' we have not seen before."
+* Section 2: Software Engineering - "This division dedicated significant effort to studying various infection vectors in our distributed systems"
+
+### Step 2: Generate Embeddings
+
 Next, we convert each text chunk into numerical embeddings using an embedding model. To make this easier to understand, let's imagine we have a perfect embedding model that always returns exactly two numbers, and we know what each number represents.
 
+<p align="center">
+  <img src="images/rag_flow_generate_embeddings.png" alt="RAG Flow: Generate Embeddings">
+</p>
 
 In our imaginary model:
 
-The first number represents how much the text talks about the medical field
-The second number represents how much the text talks about software engineering
-For the medical research section, we might get [0.97, 0.34] - very medical-focused but with some software elements due to the word "bug". For the software engineering section, we get [0.30, 0.97] - heavily software-focused but with medical undertones from "infection vectors".
+* The _first number_ represents _how much the text talks about the medical field_
+* The _second number_ represents _how much the text talks about software engineering_
 
-Normalization
-The embedding API typically performs a normalization step that scales each vector to have a magnitude of 1.0. You don't need to worry about the math here - it's handled automatically. This gives us normalized vectors like [0.944, 0.331] and [0.295, 0.955].
+For the medical research section, we might get `[0.97, 0.34]` - very medical-focused but with some software elements due to the word "bug". For the software engineering section, we get `[0.30, 0.97]`- heavily software-focused but with medical undertones from "infection vectors".
 
+**Normalization**
+
+The embedding API typically performs a normalization step that scales each vector to have a magnitude of 1.0. You don't need to worry about the math here - it's handled automatically. This gives us normalized vectors like `[0.944, 0.331]` and `[0.295, 0.955]`.
+
+<p align="center">
+  <img src="images/rag_flow_normalization.png" alt="RAG Flow: Normalization">
+</p>
 
 We can visualize these embeddings on a unit circle, where each point represents one of our text chunks.
 
+### Step 3: Store in Vector Database
 
-Step 3: Store in Vector Database
 We store these embeddings in a vector database - a specialized database optimized for storing, comparing, and searching through long lists of numbers like our embeddings.
 
+<p align="center">
+  <img src="images/rag_flow_save_vectordb.png" alt="RAG Flow: Save To VectorDb">
+</p>
 
 At this point, we pause. All the work so far has been preprocessing that happens ahead of time. Now we wait for a user to submit a query.
 
-Step 4: Process User Query
-When a user asks a question like "I'm curious about the company. In particular, what did the software engineering dept do this year?", we run their query through the same embedding model.
+### Step 4: Process User Query
 
+When a user asks a question like `"I'm curious about the company. In particular, what did the software engineering dept do this year?"`, we run their query through the same embedding model.
 
-This query gets embedded as something like [0.1, 0.89] - low medical score, high software engineering score. After normalization, we get [0.112, 0.993].
+<p align="center">
+  <img src="images/rag_flow_embed_query.png" alt="RAG Flow: Embed User Query">
+</p>
 
-Step 5: Find Similar Embeddings
-We send the user's query embedding to our vector database and ask it to find the most similar stored embeddings.
+This query gets embedded as something like `[0.1, 0.89]` - low medical score, high software engineering score. After normalization, we get `[0.112, 0.993]`.
 
+### Step 5: Find Similar Embeddings
+
+We send the user's query embedding to our vector database and ask it to find the _most similar stored embeddings_.
 
 The database returns the software engineering section because it's the closest match to what the user asked about.
 
-How Similarity Works: Cosine Similarity
-The vector database uses cosine similarity to determine which embeddings are most similar. This measures the cosine of the angle between two vectors.
+<p align="center">
+  <img src="images/rag_flow_find_similar_embeddings.png" alt="RAG Flow: Find Similar Embeddings">
+</p>
 
+**How Similarity Works: _Cosine Similarity_**
+
+The vector database uses _cosine similarity_ to determine which embeddings are most similar. This measures the cosine of the angle between two vectors.
+
+<p align="center">
+  <img src="images/rag_flow_cosine_similarity.png" alt="RAG Flow: Cosine Similarity">
+</p>
 
 Key points about cosine similarity:
 
-Results range from -1 to 1
-Values close to 1 mean high similarity
-Values close to -1 mean very different
-0 means perpendicular (no relationship)
-In our example, the cosine similarity between the user query and the software engineering chunk is 0.983 - very high similarity. The similarity with the medical research chunk is only 0.398 - much lower.
+* Results range from -1 to 1
+* Values close to 1 mean high similarity (Since `Cos(0) = 1`, close the value to `1`, smaller is the angle between vectors)
+* Values close to `-1` mean very different (Since `Cos(180) = -1`, it means vectors are apart by 180&deg;)
+* `0` means perpendicular (no relationship, or in math terms _orthogonal_, since `Cos(90) = 0`, so vectors are 90&deg; apart)
 
-Cosine Distance
-You'll often see "cosine distance" in vector database documentation. This is simply calculated as (1 - cosine similarity). With cosine distance:
+In our example, the cosine similarity between the user query and the software engineering chunk is `0.983` - very high similarity. The similarity with the medical research chunk is only `0.398` - much lower (tending towards `0` so angle between vectors tends towards 90&deg;).
 
-Values close to 0 mean high similarity
-Larger values mean less similarity
+**Cosine Distance**
+
+You'll often see _"cosine distance"_ in vector database documentation. This is simply calculated as `(1 - cosine similarity)`. So it's the _opposite_ of _"cosine similarity"_.
+
+With cosine distance:
+
+* Values _close to `0` mean high similarity_
+* _Larger values mean less similarity_
+
 This adjustment makes the numbers easier to interpret in many contexts.
 
-Step 6: Create the Final Prompt
+### Step 6: Create the Final Prompt
+
 Finally, we take the user's question and the most relevant text chunk we found, combine them into a prompt, and send it to Claude for a response.
 
+<p align="center">
+  <img src="images/rag_flow_extract_relevant_chunks.png" alt="RAG Flow: Extract Relevant Chunks">
+</p>
 
 The prompt might look like:
 
+```
 Answer the user's question about the financial document.
 
 <user_question>
@@ -337,4 +372,286 @@ How many bugs did engineers fix this year?
 ## Section 2: Software Engineering
 This division dedicated significant effort to studying various infection vectors in our distributed systems
 </report>
+```
+
 And that's the complete RAG pipeline! The system successfully retrieved the most relevant information based on semantic similarity and provided it as context for generating an accurate response.
+
+## Implementing the complete RAG flow
+(@see notebook: `005_3_implement_rag_flow.ipynb`)
+
+Now that we understand the RAG flow conceptually, let's implement it step by step. We'll walk through a complete example that demonstrates how to chunk text, generate embeddings, store them in a vector database, and perform similarity searches.
+
+### The Five-Step RAG Implementation
+
+Our implementation follows the same five steps we discussed previously:
+
+1. Chunk the text by section
+2. Generate embeddings for each chunk
+3. Create a vector store and add each embedding to it
+4. Generate an embedding for the user's question
+5. Search the store to find the most relevant chunks
+
+### Step 1: Chunking the Text
+
+First, we load our document and split it into manageable sections:
+
+```python
+with open("./report.md", "r") as f:
+    text = f.read()
+
+chunks = chunk_by_section(text)
+chunks[2]  # Test to see the table of contents
+```
+
+We use the same `chunk_by_section` function from earlier to split our document into logical sections.
+
+### Step 2: Generate Embeddings
+
+Next, we create embeddings for all our chunks at once:
+
+```python
+embeddings = generate_embedding(chunks)
+```
+
+The embedding function has been updated to handle both single strings and lists of strings, making it more efficient for batch processing.
+
+### Step 3: Store in Vector Database
+
+Now we create our vector store and populate it with embeddings and their associated text:
+
+```python
+store = VectorIndex()
+
+for embedding, chunk in zip(embeddings, chunks):
+    store.add_vector(embedding, {"content": chunk})
+```
+
+Notice that we store both the embedding and the original text content. This is crucial because when we search later, we need to return the actual text, not just the numerical embedding values.
+
+**Why Store the Original Text?**
+
+When we query our vector database, getting back just the embedding numbers isn't useful. We need the actual text that was used to generate those embeddings. That's why we include the original chunk text (or at least a reference to it) alongside each embedding in our database.
+
+### Step 4: Process User Queries
+
+When a user asks a question, we generate an embedding for their query:
+
+```python
+user_embedding = generate_embedding("What did the software engineering dept do last year?")
+```
+
+### Step 5: Find Relevant Content
+
+Finally, we search our vector store to find the most similar chunks:
+
+```python
+results = store.search(user_embedding, 2)
+
+for doc, distance in results:
+    print(distance, "\n", doc["content"][0:200], "\n")
+```
+
+This search returns the two most relevant chunks along with their similarity scores (cosine distances).
+
+The search results show us which sections of our document are most relevant to the user's question, along with similarity scores.
+
+**Understanding the Results**
+
+When we run our example query about the software engineering department, we get back:
+
+```
+Section 2: Software Engineering with a distance of 0.71 (closest match)
+Methodology section with a distance of 0.72 (second closest)
+```
+
+Lower distance values indicate higher similarity, so Section 2 is the most relevant to our query.
+
+This implementation works well for basic cases, but there are scenarios where it doesn't perform as expected. In the next sections, we'll explore improvements to make our RAG system more robust and accurate.
+
+The key takeaway is that RAG is fundamentally about converting text to numbers (embeddings), storing those numbers efficiently, and then using mathematical similarity to find relevant content when users ask questions.
+
+## BM25 Lexical Search
+
+When building RAG pipelines, you'll quickly discover that **semantic search alone doesn't always return the best results**. Sometimes you need _exact term matches that semantic search might miss_. The solution is to **combine semantic search with lexical search using a technique called `Best Match 25 (BM25)`**.
+
+### The Problem with Semantic Search Alone
+
+Let's say you're searching for a specific incident ID like `"INC-2023-Q4-011"` in a document. While semantic search excels at understanding context and meaning, it might return sections that are semantically related but don't actually contain the exact term you're looking for.
+
+In the example above, semantic search returned the cybersecurity section (which does contain the incident ID) but also returns a financial analysis section that doesn't mention the incident at all! This happens because semantic search focuses on conceptual similarity rather than exact term matching.
+
+### Hybrid Search Strategy
+
+The **solution is to run _both_ semantic and lexical searches in parallel, then merge the results**. This gives you the best of both worlds:
+
+<p align="center">
+  <img src="images/rag_flow_combine_semantic_and_hybrid_search.png" alt="RAG Flow: Combine Semantic & Hybrid Search">
+</p>
+
+1. _**Semantic search** finds conceptually related content_ using embeddings
+2. _**Lexical search** finds exact term matches_ using classic text search
+3. **Merged results** combine both approaches for better accuracy
+
+### How BM25 Works
+
+BM25 (Best Match 25) is a popular algorithm for lexical search in RAG systems. Here's how it processes a search query:
+
+<p align="center">
+  <img src="images/rag_flow_how_bm25_works.png" alt="RAG Flow: How BM25 Works">
+</p>
+
+#### Step 1: Tokenize the query
+
+Break the user's question into individual terms. For example, `"a INC-2023-Q4-011"` becomes `["a", "INC-2023-Q4-011"]`.
+
+#### Step 2: Count term frequency
+
+See **how often each term appears across all your documents**. Common words like `"a"` might appear 5 times, while specific terms like `"INC-2023-Q4-011"` might appear only once.
+
+#### Step 3: Weight terms by importance
+
+Terms that appear _less frequently get higher importance scores_. The word `"a"` gets low importance because it's common, while `"INC-2023-Q4-011"` gets high importance because it's rare.
+
+#### Step 4: Find best matches
+
+**Return documents that contain more instances of the higher-weighted terms**.
+
+### Implementing BM25 Search
+
+Here's how to set up a basic BM25 search system:
+
+```python
+# 1. Chunk your text by sections
+chunks = chunk_by_section(text)
+
+# 2. Create a BM25 store and add documents
+store = BM25Index()
+for chunk in chunks:
+    store.add_document({"content": chunk})
+
+# 3. Search the store
+results = store.search("What happened with INC-2023-Q4-011?", 3)
+
+# Print results
+for doc, distance in results:
+    print(distance, "\n", doc["content"][:200], "\n----\n")
+```
+
+When you run this search, you'll get much better results than semantic search alone. The BM25 algorithm prioritizes sections that actually contain your specific search terms, especially rare terms like incident IDs.
+
+Notice how the results now properly prioritize the Software Engineering section and Cybersecurity section - both of which actually contain the incident ID you're searching for.
+
+### Why This Works Better
+
+**BM25 excels at finding exact matches** because it:
+
+* Gives higher weight to rare, specific terms
+* Ignores common words that don't add search value
+* Focuses on term frequency rather than semantic meaning
+* Works especially well for technical terms, IDs, and specific phrases
+
+The **key insight is that both search methods have complementary strengths**. 
+
+* Semantic search understands context and meaning 
+* Lexical search ensures you don't miss exact term matches. 
+
+By combining them, you create a more robust search system that handles both conceptual queries and specific lookups effectively.
+
+## A Multi-index RAG pipeline (combining semantic & lexical search)
+
+We've built separate implementations for semantic search (using vector embeddings) and lexical search (using BM25). Now it's time to combine them into a unified search pipeline that leverages the strengths of both approaches.
+
+### The Multi-Index Architecture
+
+Both our `VectorIndex` and `BM25Index` classes share nearly identical APIs - they both have `add_document()` and `search()` methods. This consistency makes it straightforward to wrap them together in a new class called `Retriever`.
+
+<p align="center">
+  <img src="images/rag_flow_combine_semantic_and_hybrid_search.png" alt="RAG Flow: Combine Semantic & Hybrid Search">
+</p>
+
+The `Retriever` acts as a coordinator that forwards user queries to both indexes, collects their results, and merges them using a technique called **reciprocal rank fusion**.
+
+### Understanding Reciprocal Rank Fusion
+
+Merging results from different search methods isn't as simple as just concatenating lists. **Each method uses different scoring systems, so we need a way to normalize and combine their rankings fairly**.
+
+<p align="center">
+  <img src="images/rag_flow_reciprocal_rank_fusion.png" alt="RAG Flow: Reciprocal Rank Fusion">
+</p>
+
+Here's how reciprocal rank fusion works with an example. Let's say we search for information about "INC-2023-Q4-011" and get these results:
+
+VectorIndex returns: Section 2 (rank 1), Section 7 (rank 2), Section 6 (rank 3)
+BM25Index returns: Section 6 (rank 1), Section 2 (rank 2), Section 7 (rank 3)
+
+We combine these into a single table showing each text chunk's rank from both indexes, then apply the RRF formula:
+
+$$
+\text{RRF\_score}(d) = \sum_{i} \frac{1}{k + \text{rank}_i(d)}
+$$
+
+Where `k` is a constant (often `60`, but we'll use `1` for clearer results) and `rank_i(d)` is the rank of document `d` in the i-th ranking.
+
+<p align="center">
+  <img src="images/rag_flow_reciprocal_rank_fusion_calc.png" alt="RAG Flow: Reciprocal Rank Fusion Calculation">
+</p>
+
+**For our example:**
+
+* Section 2: `1.0/(1+1) + 1.0/(1+2) = 0.833`
+* Section 7: `1.0/(1+2) + 1.0/(1+3) = 0.583`
+* Section 6: `1.0/(1+3) + 1.0/(1+1) = 0.75`
+
+The final ranking becomes: `Section 2 (0.833)`, `Section 6 (0.75)`, `Section 7 (0.583)`. This makes intuitive sense - Section 2 performed well in both indexes, so it rises to the top.
+
+### Implementation Details
+
+The Retriever class wraps multiple search indexes and provides a unified interface:
+
+```python
+class Retriever:
+    def __init__(self, *indexes: SearchIndex):
+        if len(indexes) == 0:
+            raise ValueError("At least one index must be provided")
+        self._indexes = list(indexes)
+    
+    def add_document(self, document: Dict[str, Any]):
+        for index in self._indexes:
+            index.add_document(document)
+    
+    def search(self, query_text: str, k: int = 1, k_rrf: int = 60):
+        # Get results from all indexes
+        all_results = []
+        for idx, results in enumerate(all_results):
+            for rank, (doc, _) in enumerate(results):
+                # Track document ranks across indexes
+                # Apply RRF scoring formula
+        # Return merged and sorted results
+```
+
+The key insight is that by maintaining consistent APIs across different search implementations, we can easily combine them without tight coupling.
+
+### Testing the Hybrid Approach
+
+Remember our earlier problem where searching for `"what happened with INC-2023-Q4-011?"` returned unexpected results from the vector-only approach? The cybersecurity incident (Section 10) came first, but financial analysis (Section 3) came second instead of the more relevant software engineering section.
+
+With our hybrid retriever, we now get much better results:
+
+* Section 10: Cybersecurity Analysis - Incident Response Report (most relevant)
+* Section 2: Software Engineering - Project Phoenix Stability Enhancements (second most relevant)
+* Section 5: Legal Developments (third)
+
+This demonstrates how combining semantic and lexical search can overcome the limitations of either approach used alone.
+
+### Extensibility
+
+The beauty of this architecture is its extensibility. Since all indexes implement the same SearchIndex protocol with `add_document()` and `search()` methods, you can easily add new search methodologies:
+
+<p align="center">
+  <img src="images/rag_flow_retriever_extensible.png" alt="RAG Flow: Retriever Extensible Architecture">
+</p>
+
+Want to add a keyword-based index? A graph-based search? A specialized domain index? Just implement the same interface and the Retriever will automatically incorporate it into the fusion process.
+
+This modular approach keeps each search implementation focused and testable while providing a clean way to combine their strengths in the final system.
+
