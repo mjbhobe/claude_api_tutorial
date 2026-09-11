@@ -64,26 +64,63 @@ def text_from_message(message):
     return "\n".join([block.text for block in message.content if block.type == "text"])
 
 
-def add_user_image_message(
+def add_user_media_message(
     messages,
-    image_bytes,
+    media_bytes,
     user_message,
-    image_type="image/png",
+    media_type,  # ["image/png","image/jpeg","application/pdf" etc]
+    enable_citation=False,
 ):
+    # build the message block - it should look something like this
+    """
+    [
+        # add an media block
+        {
+            "type": "image" or "document"
+            "source": {
+                "type": "base64",
+                "media_type": media_type,
+                "data": media_bytes,
+            },
+        },
+        # add user block
+        {"type": "text", "text": user_message},
+    ],
+    """
+
+    media_block = {
+        "source": {
+            "type": "base64",
+            "media_type": media_type,
+            "data": media_bytes,
+        },
+    }
+
+    type = "image" if media_type.strip().startswith("image") else "document"
+    media_block["type"] = type
+    user_query_block = {"type": "text", "text": user_message}
+
+    if enable_citation:
+        # assert type == "document", ""
+        media_block["citations"] = '{"enabled" : True}'
+
+    # print(f"add_user_media_message -> user_message = {[media_block, user_query_block]}")
 
     add_user_message(
         messages,
         [
             # add an image block first
-            {
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": image_type,
-                    "data": image_bytes,
-                },
-            },
+            media_block,
+            # {
+            #     "type": "image",
+            #     "source": {
+            #         "type": "base64",
+            #         "media_type": media_type,
+            #         "data": media_bytes,
+            #     },
+            # },
             # and now the user query
-            {"type": "text", "text": user_message},
+            user_query_block,
+            # {"type": "text", "text": user_message},
         ],
     )

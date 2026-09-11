@@ -1,12 +1,13 @@
 # Features of Claude
 
 ## Extending Thinking
+@See [Extended Thinking Example](../notebooks/006_features_of_claude.ipynb#extended-thinking-capability)
+
+Extended thinking is Claude's **advanced reasoning feature that gives the model time to work through complex problems before generating a final response**. Think of it as Claude's "scratch paper" - you can see the reasoning process that leads to the answer, which helps with transparency and often results in better quality responses.
 
 > 📌 **Important Note:** Extended Thinking is **not compatible** with some other features, notable message pre-filling and temperature. 
 >
 > See the full list of restrictions here: https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#feature-compatibility
-
-Extended thinking is Claude's **advanced reasoning feature that gives the model time to work through complex problems before generating a final response**. Think of it as Claude's "scratch paper" - you can see the reasoning process that leads to the answer, which helps with transparency and often results in better quality responses.
 
 ### How Extended Thinking Works
 
@@ -90,6 +91,7 @@ For testing purposes, you can force Claude to return a redacted thinking block b
 Extended thinking is a powerful feature when you need Claude to tackle complex reasoning tasks, but use it judiciously given the cost and latency implications. Start with standard prompting, optimize thoroughly, then add thinking when you need that extra reasoning capability.
 
 ## Image Support
+@See [Image Support Example](../notebooks/006_features_of_claude.ipynb#images-support)
 
 Claude's vision capabilities let you include images in your messages and ask Claude to analyze them in countless ways. You can ask Claude to describe what's in an image, compare multiple images, count objects, or perform complex visual analysis tasks.
 
@@ -219,4 +221,63 @@ For each item above (1-5), write one sentence summarizing your findings, with yo
 This detailed prompt guides Claude through a systematic analysis, resulting in much more accurate and useful assessments than a simple request would provide.
 ```
 
-**Remember:** the same prompting techniques that work for text apply to images. Invest time in crafting detailed, structured prompts rather than relying on simple questions if you want reliable results.
+> 🎗️ **Remember:** the _same prompting techniques that work for text apply to images_. Invest time in crafting detailed, structured prompts rather than relying on simple questions if you want reliable results.
+
+## PDF Support
+
+Claude can read and analyze PDF files directly, making it a powerful tool for document processing. This capability works similarly to image processing, but with a few key differences in how you structure your code.
+
+### Setting Up PDF Processing
+
+To process a PDF file with Claude, you'll use nearly identical code to what you'd use for images. The main differences are in the file type specifications and variable names for clarity.
+
+Here's how to modify your existing image processing code for PDFs:
+
+```python
+with open("earth.pdf", "rb") as f:
+    file_bytes = base64.standard_b64encode(f.read()).decode("utf-8")
+
+messages = []
+
+add_user_message(
+    messages,
+    [
+        {
+            "type": "document",
+            "source": {
+                "type": "base64",
+                "media_type": "application/pdf",
+                "data": file_bytes,
+            },
+        },
+        {"type": "text", "text": "Summarize the document in one sentence"},
+    ],
+)
+
+chat(messages)
+```
+
+### Key Changes from Image Processing
+
+When adapting your image processing code for PDFs, you need to update several elements:
+
+* Change the file extension from `.png` to `.pdf`
+* Update the variable name from `image_bytes` to `file_bytes` for clarity (this is a variable, so use a clear name!)
+* Set the type to `"document"` instead of `"image"`
+* Change the media type to `"application/pdf"` instead of `"image/png"`
+
+### What Claude Can Extract from PDFs
+
+Claude's PDF processing capabilities go beyond simple text extraction. It can analyze and understand:
+
+* Text content throughout the document
+* Images and charts embedded in the PDF
+* Tables and their data relationships
+* Document structure and formatting
+
+This makes Claude essentially a one-stop solution for extracting any type of information from PDF documents, whether you need summaries, data analysis, or specific content extraction.
+
+![Earth PDF](images/earth_pdf.png)
+
+The example above shows Claude successfully processing a Wikipedia article about Earth that was saved as a PDF, demonstrating how it can understand and summarize complex document content in a single sentence.
+
