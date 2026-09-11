@@ -270,10 +270,10 @@ When adapting your image processing code for PDFs, you need to update several el
 
 Claude's PDF processing capabilities go beyond simple text extraction. It can analyze and understand:
 
-* Text content throughout the document
-* Images and charts embedded in the PDF
-* Tables and their data relationships
-* Document structure and formatting
+* **Text content** throughout the document
+* **Images and charts embedded** in the PDF
+* **Tables and their data** relationships
+* **Document structure and formatting**
 
 This makes Claude essentially a one-stop solution for extracting any type of information from PDF documents, whether you need summaries, data analysis, or specific content extraction.
 
@@ -281,3 +281,264 @@ This makes Claude essentially a one-stop solution for extracting any type of inf
 
 The example above shows Claude successfully processing a Wikipedia article about Earth that was saved as a PDF, demonstrating how it can understand and summarize complex document content in a single sentence.
 
+## Citations
+
+When Claude answers questions based on documents you provide, users might assume it's just drawing from its training data. But what if **Claude could show exactly where it found specific information? That's where citations come in** - a powerful feature that lets Claude reference specific parts of your source documents and show users exactly where each piece of information comes from.
+
+![Earth PDF](images/earth_pdf.png)
+
+### Why Citations Matter
+
+Imagine asking Claude about how Earth's atmosphere formed and getting a detailed answer. Without citations, users have no way to verify the information or understand that Claude is actually referencing a specific document you provided. Citations solve this transparency problem by creating a clear trail from Claude's response back to your source material.
+
+### Enabling Citations
+
+To enable citations, you need to modify your document message structure. Add two new fields to your document block:
+
+```json
+{
+    "type": "document",
+    "source": {
+        "type": "base64",
+        "media_type": "application/pdf",
+        "data": file_bytes,
+    },
+    "title": "earth.pdf",
+    "citations": { "enabled": True }
+}
+```
+
+The `title` field gives your document a readable name, while `citations: {"enabled": True}` tells Claude to track where it finds information.
+
+### Understanding Citation Structure
+
+When citations are enabled, Claude's response becomes more complex. Instead of simple text, you get structured data that includes citation information for each claim.
+
+![Citation Structure](images/citation_structure.png)
+
+Each citation contains several key pieces of information:
+
+* `cited_text` - The exact text from your document that supports Claude's statement
+* `document_index` - Which document Claude is referencing (useful when you provide multiple documents)
+* `document_title` - The title you assigned to the document
+* `start_page_number` - Where the cited text begins
+end_page_number - Where the cited text ends
+
+### Building User Interfaces with Citations
+
+The real power of citations comes from building user interfaces that make this information accessible. You can create interactive elements where users can hover over citation markers to see exactly where information came from.
+
+![Citation Interface](images/citation_references.jpg)
+
+This creates a transparent experience where users can:
+
+* See that Claude's answers are grounded in actual source material
+* Verify the information by checking the original document
+* Understand the context around each cited piece of information
+
+### Citations with Plain Text
+
+Citations aren't limited to PDF documents. You can also use them with plain text sources. When working with text, modify your document structure like this:
+
+```json
+{
+    "type": "document", 
+    "source": {
+        "type": "text",
+        "media_type": "text/plain",
+        "data": article_text,
+    },
+    "title": "earth_article",
+    "citations": { "enabled": True }
+}
+```
+
+With plain text sources, instead of page numbers, you'll get character positions that pinpoint exactly where in the text Claude found each piece of information.
+
+### When to Use Citations
+
+Citations are particularly valuable when:
+
+* Users need to verify information for accuracy
+* You're working with authoritative documents that users should be able to reference
+* Transparency about information sources is critical for your application
+* Users might want to explore the broader context around specific facts
+
+By implementing citations, you transform Claude from a "black box" that provides answers into a transparent research assistant that shows its work. This builds user trust and enables them to dive deeper into your source materials when needed.
+
+## Prompt Caching
+
+Prompt caching is a feature that speeds up Claude's responses and reduces the cost of text generation by reusing computational work from previous requests. Instead of throwing away all the processing work after each request, Claude can save and reuse it when you send similar content again.
+
+### How Claude Normally Processes Requests
+
+To understand prompt caching, let's first look at what happens during a typical request without caching enabled.
+
+<p align="center">
+  <img src="images/claude_caching1.png" alt="Claude Caching - 1">
+</p>
+
+When you send a message to Claude, it doesn't immediately start generating a response. Instead, Claude does a tremendous amount of preprocessing work on your input:
+
+<p align="center">
+  <img src="images/claude_caching2.png" alt="How Claude Processes User Request">
+</p>
+
+* Tokenizes the prompt into smaller pieces
+* Creates embeddings for each token
+* Adds context based on surrounding text
+* Only then generates the actual output text
+
+After sending you the response, **Claude throws away all this computational work** 😳 - the tokenization, embeddings, and context analysis all get discarded 😩.
+
+<p align="center">
+  <img src="images/claude_caching3.png" alt="Claude Cannot use tokens it just processed before">
+</p>
+
+### The Problem with Discarding Work
+
+This becomes inefficient when you make follow-up requests that include the same content. For example, in a conversation where you're asking Claude to refine a summary of the same long text:
+
+<p align="center">
+  <img src="images/claude_caching4.png" alt="Claude Cannot use tokens it just processed before">
+</p>
+
+Claude has to repeat all the same preprocessing work on content it just analyzed moments ago. As Claude might think to itself: `"I just processed that message and threw away all the work I did - I could have reused it!"` 😠
+
+<p align="center">
+  <img src="images/claude_caching5.png" alt="Follow Up Request">
+</p>
+
+### How Prompt Caching Solves This
+
+Prompt caching changes this workflow by saving the preprocessing work instead of discarding it:
+
+<p align="center">
+  <img src="images/claude_caching6.png" alt="Prompt Caching Fix">
+</p>
+
+When you make an initial request, Claude performs all the usual preprocessing but stores the results in a cache instead of throwing them away. The cache acts like a lookup table that says "If I ever see this message again, I'll reuse this work I already did."
+
+<p align="center">
+  <img src="images/claude_caching7.png" alt="Prompt Cache">
+</p>
+
+### Key Benefits and Limitations
+
+<p align="center">
+  <img src="images/claude_caching8.png" alt="Prompt Cache">
+</p>
+
+**Prompt caching offers several advantages:**
+
+* `Faster responses:` Requests using cached content execute more quickly
+* `Lower costs:` You pay less for the cached portions of your requests
+* `Automatic optimization:` The initial request writes to the cache, follow-up requests read from it
+
+**Important limitations of prompt caching**
+
+* `Cache duration:` Cached content only lives for one hour 🥺
+* `Limited use cases:` Only beneficial when you're repeatedly sending the same content
+* `High frequency requirement:` Most effective when the same content appears extremely frequently in your requests
+
+Prompt caching works best for scenarios like document analysis workflows, where you're asking multiple questions about the same large document, or iterative editing tasks where the base content remains constant while you refine specific aspects.
+
+## Rules of Prompt Caching
+
+Prompt caching in Claude works by storing the computational work done on your messages so it can be reused in follow-up requests. This makes subsequent requests both faster and cheaper to execute, but only when you're repeatedly sending identical content.
+
+<p align="center">
+  <img src="images/claude_caching9.png" alt="Prompt Caching Rules">
+</p>
+
+The process is straightforward: your initial request writes processing work to the cache, and follow-up requests can read from that cache instead of reprocessing the same content. The cache lives for one hour, so this feature is only useful if you're repeatedly sending the same content within that timeframe.
+
+### Cache Breakpoints
+
+**Caching isn't enabled automatically** - you need to manually add cache breakpoints to specific blocks in your messages. Here's how it works:
+
+* Work done on messages is not cached automatically
+* You must manually add a 'cache breakpoint' to a block
+* Work done for everything before the breakpoint will be cached
+* Cache will only be used on follow-up requests if the content up to and including the breakpoint is identical
+
+To add a cache breakpoint, you need to use the **longhand form** for writing text blocks instead of the shorthand:
+
+<table>
+<tr>
+<th>Shorthand form</th>
+<th>Longhand form</th>
+</tr>
+<tr>
+<td>
+
+```json
+{
+  "role": "user",
+  "content": "How far is Jupiter from the Sun?"
+}
+```
+
+</td>
+<td>
+
+```json
+{
+  "role": "user",
+  "content": [
+    {
+      "type": "text",
+      "text": "How far is Jupiter from the Sun?",
+      "cache_control": { "type": "ephemeral" }
+    }
+  ]
+}
+```
+
+</td>
+</tr>
+</table>
+
+The shorthand form doesn't provide a place to add the `cache control` field, so you must use the expanded format with the `cache_control` field set to `{"type": "ephemeral"}`.
+
+### How Cache Breakpoints Work
+
+When you place a cache breakpoint in a message, Claude **caches all the processing work up to and including that breakpoint**. Content after the breakpoint is processed normally without caching.
+
+<p align="center">
+  <img src="images/claude_caching10.png" alt="How Cache Breakpoints work?">
+</p>
+
+For the cache to be useful in follow-up requests, the content must be identical up to the breakpoint. Even small changes like adding the word "please" will invalidate the cache and force Claude to reprocess everything.
+
+### Cross-Message Caching
+
+Cache breakpoints can span across multiple messages and message types. If you place a breakpoint in a later message, all previous messages (user, assistant, etc.) will be included in the cached content.
+
+
+This is particularly useful for conversations where you want to cache the entire context up to a certain point.
+
+System Prompts and Tools
+You're not limited to text blocks - cache breakpoints can be added to:
+
+System prompts
+Tool definitions
+Image blocks
+Tool use and tool result blocks
+
+System prompts and tool definitions are excellent candidates for caching since they rarely change between requests. This is often where you'll get the most benefit from prompt caching.
+
+Cache Ordering
+Behind the scenes, Claude processes your request components in a specific order: tools first, then system prompt, then messages. Understanding this order helps you place breakpoints effectively.
+
+
+You can add up to four cache breakpoints total. For example, you might cache your tools, then add another breakpoint partway through your conversation history. This gives you flexibility in what gets cached when different parts of your request change.
+
+
+Minimum Content Length
+There's a minimum threshold for caching: content must be at least 1024 tokens long to be cached. This is the sum of all messages and blocks you're trying to cache, not individual blocks.
+
+
+A simple "Hi there!" message won't meet this threshold, but if you duplicate that content 500 times (or have a genuinely long prompt), it will exceed 1024 tokens and be eligible for caching.
+
+The key to effective prompt caching is identifying which parts of your requests stay consistent across multiple calls and placing breakpoints strategically to maximize reuse while minimizing cache invalidation.

@@ -24,7 +24,7 @@ def chat(
     messages,
     system=None,
     temperature=1.0,
-    max_tokens=4000,
+    max_tokens=4096,
     stop_sequences=[],
     # for adding tools capability
     tools=None,
@@ -68,8 +68,9 @@ def add_user_media_message(
     messages,
     media_bytes,
     user_message,
-    media_type,  # ["image/png","image/jpeg","application/pdf" etc]
-    enable_citation=False,
+    media_type,  # ["image/png","image/jpeg","application/pdf", "text/plain" etc]
+    title=None,
+    enable_citations=False,
 ):
     # build the message block - it should look something like this
     """
@@ -82,6 +83,9 @@ def add_user_media_message(
                 "media_type": media_type,
                 "data": media_bytes,
             },
+            # these two fields needed if citations requested
+            "title": "earth.pdf",  # title of document
+            "citations": { "enabled": True }
         },
         # add user block
         {"type": "text", "text": user_message},
@@ -90,7 +94,7 @@ def add_user_media_message(
 
     media_block = {
         "source": {
-            "type": "base64",
+            "type": "text" if media_type == "text/plain" else "base64",
             "media_type": media_type,
             "data": media_bytes,
         },
@@ -98,13 +102,23 @@ def add_user_media_message(
 
     type = "image" if media_type.strip().startswith("image") else "document"
     media_block["type"] = type
+
+    if enable_citations:
+        # citations make sense only if type == "document"
+        if type != "document":
+            raise ValueError(
+                "ERROR: for citations, user message type must be 'document'"
+            )
+        # require title if citations are enabled
+        if title is None:
+            raise ValueError(
+                "ERROR: `title` parameter is required if citations requested!"
+            )
+        # give your document a readable name
+        media_block["title"] = title
+        media_block["citations"] = {"enabled": True}
+
     user_query_block = {"type": "text", "text": user_message}
-
-    if enable_citation:
-        # assert type == "document", ""
-        media_block["citations"] = '{"enabled" : True}'
-
-    # print(f"add_user_media_message -> user_message = {[media_block, user_query_block]}")
 
     add_user_message(
         messages,
