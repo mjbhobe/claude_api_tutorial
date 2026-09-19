@@ -1,6 +1,7 @@
 # Features of Claude
 
 ## Extending Thinking
+
 @See [Extended Thinking Example](../notebooks/006_features_of_claude.ipynb#extended-thinking-capability)
 
 Extended thinking is Claude's **advanced reasoning feature that gives the model time to work through complex problems before generating a final response**. Think of it as Claude's "scratch paper" - you can see the reasoning process that leads to the answer, which helps with transparency and often results in better quality responses.
@@ -91,6 +92,7 @@ For testing purposes, you can force Claude to return a redacted thinking block b
 Extended thinking is a powerful feature when you need Claude to tackle complex reasoning tasks, but use it judiciously given the cost and latency implications. Start with standard prompting, optimize thoroughly, then add thinking when you need that extra reasoning capability.
 
 ## Image Support
+
 @See [Image Support Example](../notebooks/006_features_of_claude.ipynb#images-support)
 
 Claude's vision capabilities let you include images in your messages and ask Claude to analyze them in countless ways. You can ask Claude to describe what's in an image, compare multiple images, count objects, or perform complex visual analysis tasks.
