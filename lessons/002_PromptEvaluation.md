@@ -1,5 +1,7 @@
 # Prompt Evaluation
 
+**See notebook**: [Prompt Evaluation](../notebooks/002_PromptEvaluation.ipynb)
+
 When working with Claude, writing a good prompt is just the beginning. To build reliable AI applications, you need to understand two critical concepts: _prompt engineering_ and _prompt evaluation_. 
 
 * Prompt engineering gives you techniques for writing better prompts
