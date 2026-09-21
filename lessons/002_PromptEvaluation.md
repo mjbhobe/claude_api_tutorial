@@ -1,6 +1,9 @@
 # Prompt Evaluation
 
-When working with Claude, writing a good prompt is just the beginning. To build reliable AI applications, you need to understand two critical concepts: prompt engineering and prompt evaluation. Prompt engineering gives you techniques for writing better prompts, while prompt evaluation helps you measure how well those prompts actually work.
+When working with Claude, writing a good prompt is just the beginning. To build reliable AI applications, you need to understand two critical concepts: _prompt engineering_ and _prompt evaluation_. 
+
+* Prompt engineering gives you techniques for writing better prompts
+* Prompt evaluation helps you measure how well those prompts actually work.
 
 <p align="center">
   <img src="images/improving_and_evaluating_prompts.png" alt="Improving &amp; Evaluating Prompts" width="450" height="250">
@@ -42,7 +45,7 @@ Options 1 and 2 are common traps that all engineers fall into, myself included. 
 
 The reality is that when you deploy a prompt to production, users will interact with it in ways you never anticipated. What seemed like a solid prompt during your limited testing can quickly break down when faced with the full variety of real-world inputs.
 
-The **_Evaluation-First Approach_** Option 3 represents a more systematic approach to prompt development. By running your prompt through an evaluation pipeline, you get objective metrics about its performance across a broader range of test cases. 
+The **_Evaluation-First Approach_ Option 3** represents a more systematic approach to prompt development. By running your prompt through an evaluation pipeline, you get objective metrics about its performance across a broader range of test cases. 
 
 This data-driven approach lets you:
 
@@ -176,10 +179,6 @@ Our prompt needs to assist users in writing three specific types of output for A
 
 The key requirement is that when a user requests help with a task, we return clean output in one of these formats without any extra explanations, headers, or footers.
 
-<p align="center">
-  <img src="images/generate_dataset_goal.png" alt="Generate Dataset Goal" width="450" height="250">
-</p>
-
 Here's our starting prompt (version 1):
 
 ```python
@@ -195,9 +194,19 @@ An evaluation dataset contains inputs that we'll feed into our prompt. For each 
 
 Our dataset will be an array of JSON objects, where each object contains a "task" property describing what we want Claude to accomplish. We can either create this dataset by hand or generate it automatically using Claude.
 
-<p align="center">
-  <img src="images/generate_eval_datasets.png" alt="Generate Eval Datasets" width="450" height="250">
-</p>
+```json
+[
+    {
+        "task" : "Create a Python function to extract the 
+        AWS account ID from an ARN"
+    },
+    {
+        "task" : "Write a JSON policy document that allows
+         read-only access to a specific S3 bucket"
+    }, 
+    ... and many more   
+]
+```
 
 Since we're generating test data, this is a perfect opportunity to use a faster model like Haiku instead of the full Claude model.
 
@@ -279,7 +288,7 @@ print(dataset)
 
 This should return three different test cases covering our target outputs - Python functions, JSON configurations, and regular expressions for AWS-specific tasks.
 
-Here is what the output could look like:
+Here is what the output _could_ look like:
 
 ```json
 [
@@ -301,7 +310,7 @@ Here is what the output could look like:
 Once we have our dataset, we'll save it to a file so we can easily load it later during evaluation:
 
 ```python
-with open('dataset.json', 'w') as f:
+with open('eval_dataset.json', 'w') as f:
     json.dump(dataset, f, indent=2)
 ```
 
@@ -350,11 +359,13 @@ def run_test_case(test_case):
     output = run_prompt(test_case)
     
     # TODO - Grading
+    # for now hard-coded as 10, which we
+    # will refine later
     score = 10
     
     return {
-        "output": output,
         "test_case": test_case,
+        "output": output,
         "score": score
     }
 ```
@@ -384,7 +395,7 @@ This function processes every test case in our dataset and collects all the resu
 To execute our evaluation pipeline, we load our dataset and run it through our functions:
 
 ```python
-with open("dataset.json", "r") as f:
+with open("eval_dataset.json", "r") as f:
     dataset = json.load(f)
 
 results = run_eval(dataset)
@@ -402,12 +413,11 @@ print(json.dumps(results, indent=2))
 
 Each result will three key pieces of information:
 
-* `output`: The complete response from Claude
 * `test_case`: The original test case that was processed
-* `score`: The evaluation score (currently hardcoded)
+* `output`: The complete response from Claude
+* `score`: The evaluation score (currently hardcoded as `10`)
 
 Claude generates quite verbose responses since we haven't provided specific formatting instructions yet. This is exactly the kind of issue we'll address as we refine our prompts.
-
 
 ## Graders
 
@@ -505,20 +515,20 @@ The key insight is asking for strengths, weaknesses, and reasoning alongside the
 Update your test case runner to call the grader:
 
 ```python
-def run_test_case(test_case):
+def run_test_case2(test_case):
     """Calls run_prompt, then grades the result"""
     output = run_prompt2(test_case)
 
-    # TODO - Grading
-    # score = 10
+    # here we replace the hard-coded score with model
+    # assisted scoring
     model_grade = grade_by_model(test_case, output)
 
     score = model_grade["score"]
     reasoning = model_grade["reasoning"]
 
     return {
-        "output": output,
         "test_case": test_case,
+        "output": output,
         "score": score,
         "reasoning": reasoning,
     }
@@ -585,7 +595,7 @@ def validate_regex(text):
         return 0
 ```
 
-Each function tries to parse the text as its respective format. If parsing succeeds, it returns a perfect score of 10. If it fails with an error, the syntax is invalid and returns 0.
+Each function tries to parse the text as its respective format. If parsing succeeds, it returns a perfect score of `10`. If it fails with an error, the syntax is invalid and returns `0`. For Python, we are using the **Abstract Syntax Tree (`ast`)** package, which is part of the standard library.
 
 ### Dataset Format Requirements
 
