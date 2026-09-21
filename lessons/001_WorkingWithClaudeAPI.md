@@ -1,6 +1,6 @@
 # Working with the Claude API
 
-**See notebook**: [Working with Claude API](../notebooks/001a_WorkingWithClaudeAPI.ipynb)
+**See notebook**: [Working with Claude API](../notebooks/001_WorkingWithClaudeAPI.ipynb)
 
 ## Accessing The API
 
