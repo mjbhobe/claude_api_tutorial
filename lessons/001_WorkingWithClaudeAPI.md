@@ -1,5 +1,7 @@
 # Working with the Claude API
 
+**See notebook**: [Working with Claude API](../notebooks/001a_WorkingWithClaudeAPI.ipynb)
+
 ## Accessing The API
 
 When building applications with Claude, understanding the complete request lifecycle helps you make better architectural decisions and debug issues more effectively. Let's walk through what happens from the moment a user clicks "send" in your chat interface to when Claude's response appears on screen.
@@ -8,7 +10,7 @@ When building applications with Claude, understanding the complete request lifec
 
 ### The Five-Step Request Flow
 
-Every interaction with Claude follows a predictable pattern with five distinct phases: request to server, request to Anthropic API, model processing, response to server, and response to client.
+Every interaction with Claude follows a predictable pattern with five distinct phases: request to server → request to Anthropic API → model processing → response to server → and response to client.
 
 ![Five Step Request Flow - Step 1](images/five_step_request_flow1.png)
 
@@ -33,7 +35,7 @@ Every request must include these essential fields:
 
 ### Inside Claude's Processing
 
-Once Anthropic receives your request, Claude processes it through four main stages: tokenization, embedding, contextualization, and generation.
+Once Anthropic receives your request, Claude processes it through four main stages: tokenization → embedding → contextualization → and generation.
 
 **Tokenization**
 
@@ -60,11 +62,11 @@ Words often have different meanings. For example, consider the following example
     * "She deserves **credit** for closing that deal."
     * "His **credit** score dropped after the missed EMI payment."
 
-Same word, different meanings! You and I can see it clearly. A model needs to "figure" this out by adjusting the embedding, which is where the next step comes in. 
+Same word, different meanings! You and I can see it clearly. A model needs to "figure" this out by adjusting the embedding, which is where the next step comes in.
 
 **Contextualization**
 
-Claude refines each embedding based on surrounding words to determine the most likely meaning in context. This process adjusts the numerical representations to highlight the appropriate definition. 
+Claude refines each embedding based on surrounding words to determine the most likely meaning in context. This process adjusts the numerical representations to highlight the appropriate definition.
 
 The above examples will make the need for this step very clear - depending on which sentence is encountered, the same word (for example **Interest** has a completely different meaning!)
 
@@ -111,13 +113,13 @@ Understanding this flow helps you:
 
 ## Getting an API Key
 
-Navigate to Claude Console [https://platform.claude.com/dashboard](https://platform.claude.com/dashboard) -> `Get API Key` button -> create new key -> save to `.env` file.
+Navigate to Claude Console [https://platform.claude.com/dashboard](https://platform.claude.com/dashboard) → `Get API Key` button → create new key → save to `.env` file.
 
 ```bash
 ANTHROPIC_API_KEY="your-api-key-here"
 ```
 
-This approach keeps your API key out of your code and prevents accidentally committing it to version control. Always add .env to your .gitignore file.
+This approach keeps your API key out of your code and prevents accidentally committing it to version control. Always add `.env` to your `.gitignore` file, so git ignores it!
 
 ## Making requests
 
@@ -163,20 +165,20 @@ response = client.messages.create(
 )
 ```
 
-* `model` - The name of the Claude model you want to use
+* `model` - The name of the Claude model you want to use (haiku, sonnet etc.)
 * `max_tokens` - A safety limit on response length (not a target)
-* `messages` - The conversation history you're sending to Claude
+* `messages` - The _conversation history_ you're sending to Claude (a list of `user` and `assistant` messages, with content)
 
-The max_tokens parameter acts as a safety mechanism. If you set it to 1000, Claude will stop generating after 1000 tokens even if it has more to say. Claude doesn't try to reach this limit - it just writes what it thinks is appropriate and stops if it hits the maximum.
+The `max_tokens` parameter acts as a safety mechanism. If you set it to `1024` for example, Claude will stop generating after `1024` tokens even if it has more to say. Claude doesn't try to reach this limit - it just writes what it thinks is appropriate and stops if it hits the maximum.
 
 ### Understanding Messages
 
 Messages represent the conversation between you and Claude, similar to a chat application. There are two types of messages:
 
 * `User messages` - Content you want to send to Claude (written by humans)
-* `Assistant messages` - Responses that Claude has generated
+* `Assistant messages` - Responses that Claude has generated (also called AI messages in some other LLMs)
 
-Each message is a dictionary with a role (either "user" or "assistant") and content (the actual text).
+Each message is a dictionary with a `role` (either `user` or `assistant`) and `content` (the actual text). For example, this is a user message `{"role": "user", "content":"What is the largest planet in the Solar system"}`
 
 ### Making Your First Request
 
@@ -221,7 +223,7 @@ This means if you want to have a multi-turn conversation where Claude remembers 
 
 ### The Problem with Stateless Conversations
 
-Let's say you ask Claude "What is quantum computing?" and get a good response. Then you follow up with "Write another sentence" - Claude has no idea what you're referring to. It will write a sentence about something completely random because it has no memory of the quantum computing discussion.
+Let's say you ask Claude `"What is quantum computing?"` and get a good response. Then you follow up with `"Write another sentence"`, expecting to see another sentence on Quantum Computing. But Claude has no idea what you're referring to. It will write a sentence about something completely random because it has no memory of the quantum computing discussion.
 
 <p align="center">
   <img src="images/multi_turn_conversations.png" alt="Multi-turn Conversations" width="350" height="200">
@@ -242,8 +244,8 @@ Here's the flow that actually works:
 
 1. Send your initial user message to Claude
 2. Take Claude's response and add it to your message list as an assistant message
-3. Add your follow-up question as another user message
-4. Send the entire conversation history to Claude
+3. Append your follow-up question as another user message to the _same_ messages list.
+4. Send the entire conversation history (messages list) to Claude
 
 <p align="center">
   <img src="images/multi_turn_conv2.png" alt="Multi-turn Conversations-2" width="400" height="250">
