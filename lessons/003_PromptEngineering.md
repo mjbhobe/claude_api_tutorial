@@ -1,5 +1,7 @@
 # Prompt Engineering
 
+**See notebook**: [Prompt Engineering](../notebooks/002_PromptEngineering.ipynb)
+
 Prompt engineering is about taking a prompt you've written and improving it to get more reliable, higher-quality outputs. This process involves iterative refinement - starting with a basic prompt, evaluating its performance, then systematically applying engineering techniques to improve it.
 
 <p align="center">
@@ -59,8 +61,16 @@ Keep the number of test cases low (2-3) during development to speed up your iter
 Start with a simple, naive prompt to establish a baseline. Here's an example of a _deliberately basic_ first attempt:
 
 ```python
-def run_prompt(prompt_inputs):
-    prompt = f"""
+def run_prompt(prompt_inputs, prompt):
+    rendered_prompt = evaluator.render(prompt, prompt_inputs)
+
+    messages = []
+    add_user_message(messages, rendered_prompt)
+    return chat(client, model, messages)
+```
+
+```python
+    naive_prompt = f"""
         What should this person eat?
 
         - Height: {prompt_inputs["height"]}
@@ -68,10 +78,6 @@ def run_prompt(prompt_inputs):
         - Goal: {prompt_inputs["goal"]}
         - Dietary restrictions: {prompt_inputs["restrictions"]}
         """
-    
-    messages = []
-    add_user_message(messages, prompt)
-    return chat(messages)
 ```
 
 This basic prompt will likely produce poor results, but it gives you a starting point to measure improvement against.
@@ -84,6 +90,7 @@ When running your evaluation, you can specify additional criteria that the gradi
 results = evaluator.run_evaluation(
     run_prompt_function=run_prompt,
     dataset_file="dataset.json",
+    prompt=naive_prompt,
     extra_criteria="""
         The output should include:
         - Daily caloric total
@@ -103,23 +110,35 @@ After running an evaluation, you'll get both a numerical score and a detailed HT
   <img src="images/prompt_engineering_report.png" alt="Prompt Engineering Report" width="450" height="250">
 </p>
 
-Don't be discouraged by low initial scores - a score of 2.3 out of 10 is typical for a first attempt. The goal is to see consistent improvement as you apply engineering techniques.
+For the `evaluator.run_evaluation(...)` call, I could see results like this for example:
+
+```
+Graded 1/3 test cases
+Graded 2/3 test cases
+Graded 3/3 test cases
+Average score: 2.6666666666666665
+```
+
+Don't be discouraged by low initial scores - a score of `2.6` out of 10 is typical for a first attempt. The goal is to see consistent improvement as you apply engineering techniques.
 
 The detailed evaluation report helps you understand exactly where your prompt is failing and what improvements are needed. Use this feedback to guide your next iteration.
 
-## Being Clear and Direct
+## Prompt Improvement Techniques
 
-The first line of your prompt is the most important part of your entire request. This is where you set the stage for everything that follows, and getting it right can dramatically improve your results.
+In this section we'll review techniques of improving a naive prompt. We'll see techniques such as:
+
+* Being Clear and Direct
+* Being Specific
+* Structure with XML tags
+* Providing Examples
 
 ### Being Clear and Direct
 
+The first line of your prompt is the most important part of your entire request. This is where you set the stage for everything that follows, and getting it right can dramatically improve your results.
+
 When crafting that crucial first line, you want to focus on two key principles: clarity and directness. This means using simple language that leaves no room for ambiguity about what you want Claude to do.
 
-<p align="center">
-  <img src="images/pe_be_clear_and_direct.png" alt="Prompt Engineering - Be Clear &amp; Direct" width="450" height="250">
-</p>
-
-### Clear Communication
+#### Clear Communication
 
 Being "clear" means:
 
@@ -127,16 +146,20 @@ Being "clear" means:
 * State exactly what you want without beating around the bush
 * Lead with a straightforward statement of Claude's task
 
-Instead of writing something vague like _"I need to know about those things people put on their roofs that use sun - those solar panel things, I think they're called,"_ be direct and write: _"Write three paragraphs about how solar panels work."_
+Instead of writing something vague like _"I need to know about those things people put on their roofs that use sun - those solar panel things, I think they're called,"_ 
 
-### Direct Instructions
+Be direct and write: _"Write three paragraphs about how solar panels work."_
+
+#### Direct Instructions
 
 Being "direct" focuses on how you structure your request:
 
 * Use instructions, not questions
 * Start with direct action verbs like "Write," "Create," or "Generate"
 
-Rather than asking _"I was reading about renewable energy and geothermal energy sounds neat. What countries use it?"_ try: _"Identify three countries that use geothermal energy. Include generation stats for each."_
+Rather than asking _"I was reading about renewable energy and geothermal energy sounds neat. What countries use it?"_ 
+
+Try: _"Identify three countries that use geothermal energy. Include generation stats for each."_
 
 ### Putting It Into Practice
 
@@ -150,13 +173,46 @@ This revision immediately tells Claude:
 * What to create (a meal plan)
 * Key constraints (one day, for an athlete, meeting dietary restrictions)
 
+```python
+clear_and_direct_prompt = """
+  Generate a one-day meal plan for an athlete that 
+  meets their dietary restrictions.
+
+  - Height: {height}
+  - Weight: {weight}
+  - Goal: {goal}
+  - Dietary restrictions: {restrictions}
+"""
+
+results = evaluator.run_evaluation(
+    run_prompt_function=run_prompt,
+    dataset_file="dataset.json",
+    prompt=clear_and_direct_prompt,
+    extra_criteria="""
+        The output should include:
+        - Daily caloric total
+        - Macronutrient breakdown  
+        - Meals with exact foods, portions, and timing
+        """
+)
+```
+
+Running the above code, improves the results - for example, I saw something like this:
+
+```
+Graded 1/3 test cases
+Graded 2/3 test cases
+Graded 3/3 test cases
+Average score: 5.666666666666667
+```
+
 ### Results Matter
 
-This simple change can have a significant impact on performance. In our example, the evaluation score jumped from `2.32` to `3.92` - a substantial improvement from just restructuring that opening line.
+This simple change can have a significant impact on performance. In our example, the evaluation score jumped from `2.67` to `5.67` - a substantial improvement from just restructuring that opening line.
 
-The key takeaway is that Claude responds best when you treat it like a capable assistant who needs clear direction rather than someone who has to guess what you want. Start strong with a direct action verb, be specific about the task, and you'll see better results right away.## 
+The key takeaway is that **Claude responds best when you treat it like a capable assistant who needs clear direction rather than someone who has to guess what you want**. Start strong with a direct action verb, be specific about the task, and you'll see better results right away.## 
 
-## Being Specific
+### Being Specific
 
 When working with Claude, one of the most effective ways to improve your results is to be specific about what you want. Instead of leaving everything up to the model's interpretation, you can provide clear guidelines or steps that direct Claude toward the kind of output you're looking for.
 
@@ -168,7 +224,7 @@ Think about it this way: if you ask Claude to "write a short story about a chara
 
 By adding specific guidelines, you give Claude a clearer target to aim for. This dramatically improves both the consistency and quality of the output.
 
-### Two Types of Guidelines
+#### Two Types of Guidelines
 
 There are two main approaches to being specific in your prompts, and you'll often see them used together in professional applications.
 
@@ -176,9 +232,9 @@ There are two main approaches to being specific in your prompts, and you'll ofte
   <img src="images/pe_guideline_types.png" alt="Prompt Engineering - Types of Guidelines" width="450" height="250">
 </p>
 
-#### Output Quality Guidelines
+**Output Quality Guidelines**
 
-The first type focuses on listing qualities that your output should have. These guidelines help you control:
+The first type focuses on **listing qualities that your output should have**. These guidelines help you control:
 
 * Length of the response
 * Structure and format
@@ -187,9 +243,9 @@ The first type focuses on listing qualities that your output should have. These 
 
 For example, you might specify that a story should be under 1,000 words, include a clear action that reveals the character's talent, and feature at least one supporting character.
 
-#### Process Steps
+**Process Steps**
 
-The second type provides specific steps for Claude to follow. This approach is particularly useful when you want Claude to think through a problem systematically or consider multiple perspectives before arriving at a final answer.
+The second type **provides specific steps for Claude to follow**. This approach is particularly useful when you want Claude to think through a problem systematically or consider multiple perspectives before arriving at a final answer.
 
 Instead of jumping straight to writing, you might ask Claude to:
 
@@ -198,7 +254,7 @@ Instead of jumping straight to writing, you might ask Claude to:
 3. Outline a pivotal scene that reveals the talent
 4. Brainstorm supporting character types that could increase the impact
 
-### Real-World Impact
+#### Real-World Impact
 
 The difference that specificity makes is dramatic. In testing a meal planning prompt, adding guidelines improved the evaluation score from 3.92 to 7.86 - more than doubling the quality of the output simply by telling Claude exactly what elements to include.
 
@@ -235,12 +291,221 @@ Add step-by-step instructions when you're dealing with:
 
 For instance, if you're asking Claude to analyze why a sales team's performance dropped, you'd want to guide it through examining market metrics, industry changes, individual performance, organizational changes, and customer feedback - rather than letting it focus on just one potential cause.
 
-### Combining Both Approaches
+#### Combining Both Approaches
 
 In professional prompting, you'll often see both techniques used together. You might have guidelines that control the format and content of your output, plus steps that ensure Claude thinks through the problem thoroughly before responding.
 
 This combination gives you both consistency in your results and confidence that Claude has considered all the important factors in reaching its conclusion.
 
-## Structure with XML Tags
+```python
+clear_direct_and_specific_prompt = """
+Generate a one-day meal plan for an athlete that 
+meets their dietary restrictions.
+
+- Height: {height}
+- Weight: {weight}
+- Goal: {goal}
+- Dietary restrictions: {restrictions}
+
+Guidelines:
+1. Include accurate daily calorie amount
+2. Show protein, fat, and carb amounts
+3. Specify when to eat each meal
+4. Use only foods that fit restrictions
+5. List all portion sizes in grams
+6. Keep budget-friendly if mentioned
+"""
+
+results = evaluator.run_evaluation(
+    run_prompt_function=run_prompt,
+    dataset_file="dataset.json",
+    prompt=clear_direct_and_specific_prompt,
+    extra_criteria="""
+        The output should include:
+        - Daily caloric total
+        - Macronutrient breakdown  
+        - Meals with exact foods, portions, and timing
+        """
+)
+```
+
+Running the above code I saw something like this - a slightly better score:
+
+```
+Graded 1/3 test cases
+Graded 2/3 test cases
+Graded 3/3 test cases
+Average score: 6.333333333333333
+```
+
+### Structure with XML Tags
+
+When you're building prompts that include a lot of content, Claude can sometimes struggle to understand which pieces of text belong together or what different sections are supposed to represent. XML tags provide a simple way to add structure and clarity to your prompts, especially when you're interpolating large amounts of data.
+
+#### Why Structure Matters
+
+Consider a prompt where you need to analyze 20 pages of sales records. Without clear boundaries, Claude might have trouble distinguishing between your instructions and the actual data you want analyzed.
+
+```
+Write a 1 page decision report to troubleshoot why a Sales team's numbers have dropped 30% last quarter.
+
+Here are the last 20 pages of our sales records:
+{sales_records}
+
+Follow these steps:
+1. Compare current vs previous market metrics
+2. Identify relevant industry changes
+3. Analyze individual team member performance
+4. Consider recent organizational changes
+5. Review customer feedback
+```
+
+The example above shows how unclear boundaries can make it difficult for Claude to parse your intent. By wrapping the sales records in XML tags like `<sales_records>` and `</sales_records>`, you create clear delimiters that help Claude understand the structure of your prompt.
+
+```
+Write a 1 page decision report to troubleshoot why a Sales team's numbers have dropped 30% last quarter.
+
+Here are the last 20 pages of our sales records:
+<sales_records>
+{sales_records}
+</sales_records>
+
+Follow these steps:
+1. Compare current vs previous market metrics
+2. Identify relevant industry changes
+3. Analyze individual team member performance
+4. Consider recent organizational changes
+5. Review customer feedback
+```
+
+#### Practical Example: Code and Documentation
+
+Here's a more dramatic example of why XML tags matter. If you ask Claude to debug code using provided documentation, mixing everything together creates confusion:
+
+<table cellspacing="0" cellpadding="0">
+<tr style="vertical-align: top;">
+  <th>Not Great</th>
+  <th>Better!</th>
+</tr>
+<tr style="vertical-align: top;">
+  <td>
+    Debug my code below using the provided documentation:
+
+    from datavortex import Pipeline, DataSource
+
+    def process_data(input_file, output_file):
+      pipeline = Pipeline()
+      source = Datasource.from_csv(input_file)
+
+    \# creating a data source from data vortex
+    csv_source = DataSource.from_csv("data.csv")
+  </td>
+  <td>
+    Debug my code below using the provided documentation:
+  
+    <my_code>
+    from datavortex import Pipeline, DataSource
+
+    def process_data(input_file, output_file):
+      pipeline = Pipeline()
+      source = Datasource.from_csv(input_file)
+    </my_code>
+
+    <docs>
+    \# creating a data source from data vortex
+    csv_source = DataSource.from_csv("data.csv")
+    </docs>
+  <td>
+  </td>
+</tr>
+</table>
+
+The **"Not Great"** version makes it nearly impossible to tell what's code versus documentation. The **"Better!"** version uses `<my_code>` and `<docs>` tags to create clear boundaries.
+
+#### Custom Tag Names
+
+**You don't need to use official XML tags**. Create descriptive names that make sense for your content:
+
+* `<sales_records>` is better than `<data>`
+* `<athlete_information>` clearly identifies user details
+* `<my_code>` and `<docs>` separate different types of content
+
+The more specific and descriptive your tag names, the better Claude can understand the purpose of each section.
+
+#### When to Use XML Tags
+
+XML tags are most useful when:
+
+* Including large amounts of context or data
+* Mixing different types of content (code, documentation, data)
+* You want to be extra clear about content boundaries
+* Working with complex prompts that interpolate multiple variables
+
+Even for shorter content, XML tags can help serve as delimiters that make your prompt structure more obvious to Claude.
+
+#### Real-World Application
+
+In practice, you might structure a prompt like this:
+
+```
+<athlete_information>
+- Height: 6'2"
+- Weight: 180 lbs
+- Goal: Build muscle
+- Dietary restrictions: Vegetarian
+</athlete_information>
+
+Generate a meal plan based on the athlete information above.
+```
+
+This makes it crystal clear that the `height`, `weight`, `goal`, and `dietary restrictions` are all related athlete data that should be considered together when generating the meal plan.
+
+While you might not see dramatic improvements with simple prompts, XML tags become increasingly valuable as your prompts grow more complex and include larger amounts of varied content.
 
 
+```python
+clear_direct_specific_with_xml = """
+  Generate a one-day meal plan for an athlete that 
+  meets their dietary restrictions.
+
+  <athlete_information> 
+  - Height: {height} 
+  - Weight: {weight} 
+  - Goal: {goal} 
+  - Dietary restrictions: {restrictions} 
+  </athlete_information>
+
+  Guidelines:
+  1. Include accurate daily calorie amount
+  2. Show protein, fat, and carb amounts
+  3. Specify when to eat each meal
+  4. Use only foods that fit restrictions
+  5. List all portion sizes in grams
+  6. Keep budget-friendly if mentioned
+"""
+
+results = evaluator.run_evaluation(
+    run_prompt_function=run_prompt,
+    dataset_file="dataset.json",
+    prompt=clear_direct_specific_with_xml,
+    extra_criteria="""
+        The output should include:
+        - Daily caloric total
+        - Macronutrient breakdown  
+        - Meals with exact foods, portions, and timing
+        """
+)
+```
+
+Running the above code I saw something like this - I didn't see any improvement, maybe because we have just 1 entity and adding XML in this specific case, makes really no difference to the overall prompt:
+
+```
+Graded 1/3 test cases
+Graded 2/3 test cases
+Graded 3/3 test cases
+Average score: 6.333333333333333
+```
+
+### Providing Examples
+
+<< TODO >>
