@@ -17,9 +17,13 @@ Tool use follows a specific back-and-forth pattern between your application and 
 </p>
 
 1. `Initial Request`: You send Claude a question **along with instructions on how to get extra data from external sources** (i.e. list of tools and when & how to call them)
-2. `Tool Request`: Claude analyzes the question and decides it needs additional information. So tells your server that it needs extra info - it can determine this from the extra info. we sent it along with our request.
-3. `Data Retrieval`: **Your server runs code to fetch the requested information from external APIs or databases** - this is important to understand. Claude _cannot_ run any code to fetch extra info - it can only tell your server that it needs extra info and server calls the function(s).
-4. `Server fetches info`: The server calls APIs/function/makes-Db-call (whatever is needed) to fetch the _extra_ information.
+2. `Tool Request`: Claude analyzes the question and decides it needs additional information. So **it tells your server that it needs extra info** - it can determine this from the extra info. (list of tools & how to call them) we sent it along with our request. 
+3. `Data Retrieval`: **Your server runs code to fetch the requested information from external APIs or databases**. 
+
+    This is important to understand. Claude itself _cannot_ run any code to fetch extra info. It can only determine that it needs extra info from a certain tool call and tell your server so. The server then calls the respective tool to fetch the extra info.
+4. `Server fetches info`: The server calls APIs/function/makes-Db-call (whatever is needed) to fetch the _extra_ information that Claude needs.
+
+    This extra info fetched by the server forms the _raw input_ to Claude, from which it will generate the final response to your query.
 5. `Final Response`: Your server the _raw retrieved data_ back to Claude, which then generates a complete response using both the original question and the fresh data.
 
 ### Weather Example in Practice
@@ -30,7 +34,7 @@ Let's see how this works with the weather question. The process becomes much mor
   <img src="images/tool_usage_example_weather.png" alt="Weather Data Fetch Example" width="450" height="300">
 </p>
 
-When a user asks about current weather [for example: `What's the current weather in Mumbai?`], **you include instructions in your prompt about how to retrieve weather data** (maybe your prompt tells Claude to call a `get_weather` function with city name as parameter for example). Claude recognizes it needs current information tells your server to fetch the additional info (for example, tells your server that it should call the `get_weather("Mumbai")` function). Your server then calls the `get_weather(...)` function, which could use weather API to get real-time conditions for a city/ The server will then send the raw data it fetched back to Claude. Finally, Claude combines the fresh weather data with the user's question to provide an accurate, current response.
+When a user asks about current weather [for example: `What's the current weather in Mumbai?`], **you include instructions in your prompt about how to retrieve weather data** (maybe your prompt tells Claude to call a `get_weather` function with city name as parameter for example). Claude recognizes it needs current weather information for Mumbai and tells your server to fetch the additional info (for example, tells your server that it should call the `get_weather("Mumbai")` function). Your server then calls the `get_weather(...)` function, which could use weather API to get real-time conditions for a city. The server will then send the raw data it fetched back to Claude. Finally, Claude combines the fresh weather data with the user's question to provide an accurate, current response.
 
 ### Key Benefits
 
