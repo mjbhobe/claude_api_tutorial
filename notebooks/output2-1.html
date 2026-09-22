@@ -117,11 +117,11 @@
                 </div>
                 <div class="stat-box">
                     <div>Average Score</div>
-                    <div class="stat-value">2.2 / 10</div>
+                    <div class="stat-value">7.5 / 10</div>
                 </div>
                 <div class="stat-box">
                     <div>Pass Rate (≥7)</div>
-                    <div class="stat-value">0.0%</div>
+                    <div class="stat-value">75.0%</div>
                 </div>
             </div>
         </div>
@@ -143,143 +143,127 @@
                 <td>Testing with a passage containing interdisciplinary topics spanning multiple fields (e.g., neuroscience, philosophy, and technology) to verify the prompt correctly identifies and separates diverse subject areas</td>
                 <td class="prompt-inputs"><strong>content:</strong> Recent advances in neurotechnology have sparked profound philosophical debates about consciousness and personal identity. The development of brain-computer interfaces (BCIs) enables direct neural signal decoding, allowing paralyzed patients to control robotic limbs with thought alone. Simultaneously, these technologies raise epistemological questions about the nature of mind-body interaction and whether artificial neural networks can truly replicate human cognition. Furthermore, the ethical implications of neural data privacy and cognitive liberty have become central concerns in bioethics, as neuroscientists, computer engineers, and philosophers collaborate to establish regulatory frameworks governing the use of invasive and non-invasive neuroimaging techniques in both clinical and consumer applications.</td>
                 <td class="criteria">• Identifies and separates topics spanning at least three distinct fields (neuroscience, philosophy, technology, ethics)<br>• Extracts all major subject areas mentioned without combining unrelated topics into single entries<br>• Returns results as a valid JSON array of strings</td>
-                <td class="output"><pre># Topics in this passage:
-
-1. **Neurotechnology** - Recent advances and developments in brain-related technology
-
-2. **Philosophy of Mind** - Questions about consciousness and personal identity
-
-3. **Brain-Computer Interfaces (BCIs)** - Direct neural signal decoding technology
-
-4. **Medical Applications** - Using BCIs to help paralyzed patients control robotic limbs
-
-5. **Artificial Intelligence/Neural Networks** - Whether AI can replicate human cognition
-
-6. **Epistemology** - Questions about the nature of knowledge and mind-body interaction
-
-7. **Bioethics** - Ethical implications and concerns in neurotechnology use
-
-8. **Neural Data Privacy** - Protection of brain-derived data
-
-9. **Cognitive Liberty** - Right to mental self-determination
-
-10. **Regulatory Frameworks** - Governance of neuroimaging techniques in clinical and consumer settings
-
-The passage essentially covers the intersection of **neuroscience, philosophy, ethics, and technology policy**.</pre></td>
-                <td class="score-col"><span class="score score-low">3</span></td>
-                <td class="reasoning">The solution identifies excellent topics that meet the secondary criteria (spanning multiple fields, comprehensive coverage). However, it catastrophically fails all three mandatory requirements: (1) it is not a valid JSON array of strings, (2) each entry contains extra commentary beyond the topic name, and (3) the response includes substantial non-JSON content. The task explicitly requires 'the JSON array and nothing else.' A correct response would be: ["Neurotechnology", "Philosophy of Mind", "Brain-Computer Interfaces", "Medical Applications", "Artificial Intelligence", "Epistemology", "Bioethics", "Neural Data Privacy", "Cognitive Liberty", "Regulatory Frameworks"]</td>
+                <td class="output"><pre>```json
+[
+  "neurotechnology",
+  "consciousness",
+  "personal identity",
+  "brain-computer interfaces (BCIs)",
+  "neural signal decoding",
+  "mind-body interaction",
+  "artificial neural networks",
+  "human cognition",
+  "neural data privacy",
+  "cognitive liberty",
+  "bioethics",
+  "neuroimaging techniques",
+  "regulatory frameworks"
+]
+```</pre></td>
+                <td class="score-col"><span class="score score-high">10</span></td>
+                <td class="reasoning">The solution fully satisfies all mandatory requirements: it is a valid JSON array of strings containing topics from the passage with no extra commentary. It exceeds the secondary criteria by identifying topics across four distinct fields (neuroscience, philosophy, technology, ethics) and extracting all major subject areas without inappropriate combinations. The extraction is thorough and well-organized. The only minor stylistic consideration is the inclusion of the BCI abbreviation in parentheses, which doesn't violate requirements but represents a slight deviation from pure topic naming conventions.</td>
             </tr>
         
             <tr>
                 <td>Testing with a dense academic abstract containing implicit topics buried within methodology descriptions to assess whether the prompt extracts subtle themes beyond explicitly named topics</td>
                 <td class="prompt-inputs"><strong>content:</strong> This study employs a mixed-methods approach combining quantitative transcriptomic profiling via RNA-sequencing with qualitative phenotypic observations to investigate cellular differentiation pathways in murine hematopoietic stem cells. We utilized single-cell RNA-seq to identify gene expression signatures associated with megakaryocytic lineage commitment, employing dimensionality reduction techniques including t-SNE and UMAP to visualize cellular heterogeneity. Computational integration of chromatin accessibility data from ATAC-seq revealed that epigenetic remodeling at enhancer regions precedes transcriptional changes, suggesting a mechanistic link between chromatin architecture and lineage specification. Our longitudinal analysis tracked temporal dynamics of transcription factor binding and histone modifications across differentiation stages, identifying previously uncharacterized regulatory motifs that coordinate stem cell self-renewal with differentiation potential.</td>
                 <td class="criteria">• Extracts both explicitly named topics (RNA-sequencing, ATAC-seq, t-SNE, UMAP) and implicitly embedded topics derived from methodology descriptions (cellular differentiation, gene expression, chromatin accessibility, epigenetic remodeling, transcription factor regulation, lineage specification)<br>• Identifies overarching themes (stem cell biology, computational biology, transcriptomics, epigenetics) that connect multiple methodological components<br>• Returns results as a JSON array of strings</td>
-                <td class="output"><pre># Topics in This Study
-
-## Primary Research Focus
-- **Cellular differentiation** (specifically hematopoietic stem cells)
-- **Megakaryocytic lineage commitment**
-- **Gene expression** and transcriptional regulation
-
-## Methodologies
-- **RNA-sequencing** (bulk and single-cell RNA-seq)
-- **ATAC-seq** (chromatin accessibility analysis)
-- **Dimensionality reduction** (t-SNE, UMAP)
-- **Computational integration** of multi-omics data
-
-## Biological Mechanisms Investigated
-- **Epigenetic remodeling** (chromatin architecture)
-- **Enhancer regulation**
-- **Transcription factor binding**
-- **Histone modifications**
-- **Stem cell self-renewal** vs. differentiation
-
-## Analytical Approaches
-- **Single-cell analysis**
-- **Longitudinal/temporal analysis**
-- **Regulatory motif discovery**
-- **Cellular heterogeneity visualization**
-
-## Key Biological Concepts
-- **Gene expression signatures**
-- **Lineage specification**
-- **Stem cell biology**
-
-This is a **molecular/systems biology study** examining the regulatory mechanisms controlling blood cell (hematopoietic) differentiation using advanced genomic and epigenomic techniques.</pre></td>
-                <td class="score-col"><span class="score score-low">2</span></td>
-                <td class="reasoning">The solution demonstrates excellent topic extraction and understanding of the source material, successfully identifying both explicit methodologies and implicit biological concepts. However, it completely fails to meet the mandatory requirements by not returning a JSON array of strings and by including substantial additional commentary. The task explicitly requires a JSON array containing only topic strings with no extra commentary, and the response should contain only the JSON array. This is a clear and unambiguous violation of the mandatory requirements.</td>
+                <td class="output"><pre>```json
+[
+  "mixed-methods approach",
+  "RNA-sequencing",
+  "transcriptomic profiling",
+  "cellular differentiation",
+  "hematopoietic stem cells",
+  "single-cell RNA-seq",
+  "gene expression signatures",
+  "megakaryocytic lineage commitment",
+  "dimensionality reduction",
+  "t-SNE",
+  "UMAP",
+  "cellular heterogeneity",
+  "chromatin accessibility",
+  "ATAC-seq",
+  "epigenetic remodeling",
+  "enhancer regions",
+  "chromatin architecture",
+  "lineage specification",
+  "transcription factor binding",
+  "histone modifications",
+  "regulatory motifs",
+  "stem cell self-renewal",
+  "differentiation potential"
+]
+```</pre></td>
+                <td class="score-col"><span class="score score-high">9</span></td>
+                <td class="reasoning">The solution fully satisfies all mandatory requirements: it is a valid JSON array of strings containing topics from the article, with no extra commentary, and nothing else in the response. It meets the secondary criteria by extracting both explicitly named topics (RNA-sequencing, ATAC-seq, t-SNE, UMAP) and implicitly embedded topics (cellular differentiation, gene expression signatures, chromatin accessibility, epigenetic remodeling, transcription factor binding, lineage specification). The solution identifies connecting themes across methodological components. While a few minor overarching themes could have been included as explicit topics, the extraction is thorough and well-balanced. The solution demonstrates strong understanding of the source material and appropriate topic granularity.</td>
             </tr>
         
             <tr>
                 <td>Testing with a passage containing overlapping or hierarchical topics (e.g., 'machine learning' and 'deep neural networks') to evaluate whether the prompt handles related concepts appropriately without excessive duplication</td>
                 <td class="prompt-inputs"><strong>content:</strong> Recent advances in machine learning have revolutionized artificial intelligence applications across multiple domains. Deep neural networks, a subset of machine learning algorithms, have demonstrated exceptional performance in image recognition tasks through convolutional architectures. Furthermore, supervised learning techniques utilizing deep neural networks have achieved state-of-the-art results in natural language processing, while unsupervised learning methods continue to expand the capabilities of machine learning for anomaly detection. The intersection of deep learning and reinforcement learning has enabled breakthrough achievements in game-playing agents, showcasing how neural network-based approaches can optimize decision-making strategies in complex environments.</td>
                 <td class="criteria">• Extracts all distinct topics without excessive duplication of hierarchically related concepts (e.g., 'deep neural networks' and 'machine learning' should both appear, but not repeated multiple times)<br>• Returns output as a valid JSON array of strings<br>• Captures specific application domains and methodologies mentioned in the passage</td>
-                <td class="output"><pre># Topics in this text:
-
-1. **Machine Learning** - General advances and applications
-2. **Artificial Intelligence** - Broad field being revolutionized
-3. **Deep Neural Networks** - Core architecture discussed throughout
-4. **Image Recognition** - Application using convolutional architectures
-5. **Convolutional Neural Networks** - Specific architecture for image tasks
-6. **Supervised Learning** - Learning approach for NLP tasks
-7. **Natural Language Processing (NLP)** - Text and language applications
-8. **Unsupervised Learning** - Methods for anomaly detection
-9. **Anomaly Detection** - Specific application
-10. **Reinforcement Learning** - Learning paradigm for decision-making
-11. **Deep Learning** - Broader category encompassing neural networks
-12. **Game-Playing Agents** - Application example showcasing optimization
-13. **Decision-Making Optimization** - Core capability in complex environments
-
-The text essentially surveys how different machine learning approaches (supervised, unsupervised, reinforcement) and deep learning techniques are advancing AI across various practical applications.</pre></td>
-                <td class="score-col"><span class="score score-low">2</span></td>
-                <td class="reasoning">The solution fails all three mandatory requirements. While the content identifies appropriate topics, the format is fundamentally wrong. The output should be a valid JSON array containing only topic strings with no additional text, commentary, or formatting. Instead, it provides a markdown-formatted list with descriptions and a concluding summary. This is an automatic failure regardless of topic quality.</td>
+                <td class="output"><pre>```json
+{
+  "key_topics": [
+    "machine learning",
+    "artificial intelligence",
+    "deep neural networks",
+    "image recognition",
+    "convolutional architectures",
+    "supervised learning",
+    "natural language processing",
+    "unsupervised learning",
+    "anomaly detection",
+    "deep learning",
+    "reinforcement learning",
+    "game-playing agents",
+    "neural networks",
+    "decision-making strategies"
+  ]
+}
+```</pre></td>
+                <td class="score-col"><span class="score score-low">3</span></td>
+                <td class="reasoning">The solution violates a mandatory requirement by wrapping the array in an object with a 'key_topics' key instead of providing a pure JSON array. The task explicitly states the response should contain 'the JSON array and nothing else,' and the mandatory requirements specify 'Contains a JSON array of strings.' The correct format should be a direct array like ["machine learning", "artificial intelligence", ...] rather than {"key_topics": [...]}. While the content quality is excellent and meets all secondary criteria, this structural violation of mandatory requirements results in an automatic failure score.</td>
             </tr>
         
             <tr>
                 <td>Testing with a short passage containing minimal topics and a long, complex passage with numerous topics to verify the prompt's consistency in extraction across different text lengths and topic density levels</td>
                 <td class="prompt-inputs"><strong>content:</strong> This study examines the intersection of climate change mitigation and urban development through a comparative analysis of green infrastructure implementation across three metropolitan regions. We investigate how permeable pavements, green roofs, and urban forests reduce heat island effects while simultaneously improving stormwater management and air quality. Our findings demonstrate that integrated climate adaptation strategies in cities require coordination between municipal planning departments, environmental agencies, and community stakeholders. We analyze carbon sequestration rates in different vegetation types, evaluate the economic costs and benefits of green infrastructure investments, and assess public health outcomes including respiratory disease reduction and mental health improvements from increased urban green space. The research also addresses policy frameworks governing sustainable urban design, technological innovations in building materials for energy efficiency, and social equity concerns regarding equitable distribution of environmental benefits across socioeconomic groups.</td>
                 <td class="criteria">• Extraction identifies all major topics (climate change, urban development, green infrastructure types, environmental benefits, economic analysis, policy, public health, social equity)<br>• Returned as a valid JSON array of strings<br>• Topics are distinct and appropriately granular without excessive fragmentation or over-aggregation</td>
-                <td class="output"><pre># Topics in this Study
-
-## Primary Topics:
-1. **Climate Change Mitigation** - reducing greenhouse gases and carbon sequestration
-2. **Urban Development** - city planning and metropolitan growth
-3. **Green Infrastructure** - permeable pavements, green roofs, urban forests
-
-## Secondary Topics:
-4. **Environmental Benefits**
-   - Heat island effect reduction
-   - Stormwater management
-   - Air quality improvement
-
-5. **Public Health**
-   - Respiratory disease reduction
-   - Mental health improvements
-
-6. **Economics**
-   - Cost-benefit analysis of green infrastructure
-   - Investment evaluation
-
-7. **Governance & Policy**
-   - Municipal planning
-   - Policy frameworks for sustainable design
-   - Coordination between agencies and stakeholders
-
-8. **Technology**
-   - Building material innovations
-   - Energy efficiency technologies
-
-9. **Social Justice**
-   - Equitable distribution of environmental benefits
-   - Socioeconomic equity concerns
-
-10. **Stakeholder Engagement**
-    - Community involvement
-    - Inter-agency coordination
-
-The study takes a **holistic, interdisciplinary approach** to urban sustainability, integrating environmental science, economics, public health, policy, and social equity.</pre></td>
-                <td class="score-col"><span class="score score-low">2</span></td>
-                <td class="reasoning">While the solution demonstrates excellent understanding of the source material and identifies all major topics with appropriate granularity, it completely fails to meet the mandatory requirements. The task explicitly requires: (1) a JSON array of strings, (2) containing only topics without extra commentary, and (3) nothing else in the response. The provided solution is formatted as markdown with headers, categories, and analytical commentary. This is a fundamental format violation that makes the output unsuitable for automated processing or integration into systems expecting JSON. The quality of topic identification is irrelevant when the delivery format is entirely wrong.</td>
+                <td class="output"><pre>```json
+[
+  "climate change mitigation",
+  "urban development",
+  "green infrastructure",
+  "permeable pavements",
+  "green roofs",
+  "urban forests",
+  "heat island effects",
+  "stormwater management",
+  "air quality",
+  "climate adaptation strategies",
+  "municipal planning",
+  "environmental agencies",
+  "community stakeholders",
+  "carbon sequestration",
+  "vegetation types",
+  "economic costs and benefits",
+  "public health outcomes",
+  "respiratory disease",
+  "mental health",
+  "urban green space",
+  "policy frameworks",
+  "sustainable urban design",
+  "energy efficiency",
+  "building materials",
+  "social equity",
+  "environmental justice",
+  "socioeconomic disparities"
+]
+```</pre></td>
+                <td class="score-col"><span class="score score-high">8</span></td>
+                <td class="reasoning">The solution meets all mandatory requirements: it is a valid JSON array of strings containing topics from the article with no extra commentary. It successfully identifies all major topics specified in the criteria (climate change, urban development, green infrastructure types, environmental benefits, economic analysis, policy, public health, social equity). The granularity is well-balanced with 27 distinct topics that are neither fragmented nor over-aggregated. However, two topics ('environmental justice' and 'socioeconomic disparities') appear to be inferences or rewordings rather than direct extractions from the source text, which slightly violates the spirit of extraction tasks. These are minor issues that don't breach mandatory requirements but represent small deviations from pure extraction.</td>
             </tr>
         
             </tbody>

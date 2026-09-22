@@ -1,0 +1,50 @@
+[
+  {
+    "prompt_inputs": {
+      "content": "Recent advances in neurotechnology have sparked profound philosophical debates about consciousness and personal identity. The development of brain-computer interfaces (BCIs) enables direct neural signal decoding, allowing paralyzed patients to control robotic limbs with thought alone. Simultaneously, these technologies raise epistemological questions about the nature of mind-body interaction and whether artificial neural networks can truly replicate human cognition. Furthermore, the ethical implications of neural data privacy and cognitive liberty have become central concerns in bioethics, as neuroscientists, computer engineers, and philosophers collaborate to establish regulatory frameworks governing the use of invasive and non-invasive neuroimaging techniques in both clinical and consumer applications."
+    },
+    "solution_criteria": [
+      "Identifies and separates topics spanning at least three distinct fields (neuroscience, philosophy, technology, ethics)",
+      "Extracts all major subject areas mentioned without combining unrelated topics into single entries",
+      "Returns results as a valid JSON array of strings"
+    ],
+    "task_description": "\n            Extract topics out of a passage of text from a scholarly article into a JSON\n            array of strings\n            ",
+    "scenario": "Testing with a passage containing interdisciplinary topics spanning multiple fields (e.g., neuroscience, philosophy, and technology) to verify the prompt correctly identifies and separates diverse subject areas"
+  },
+  {
+    "prompt_inputs": {
+      "content": "This study employs a mixed-methods approach combining quantitative transcriptomic profiling via RNA-sequencing with qualitative phenotypic observations to investigate cellular differentiation pathways in murine hematopoietic stem cells. We utilized single-cell RNA-seq to identify gene expression signatures associated with megakaryocytic lineage commitment, employing dimensionality reduction techniques including t-SNE and UMAP to visualize cellular heterogeneity. Computational integration of chromatin accessibility data from ATAC-seq revealed that epigenetic remodeling at enhancer regions precedes transcriptional changes, suggesting a mechanistic link between chromatin architecture and lineage specification. Our longitudinal analysis tracked temporal dynamics of transcription factor binding and histone modifications across differentiation stages, identifying previously uncharacterized regulatory motifs that coordinate stem cell self-renewal with differentiation potential."
+    },
+    "solution_criteria": [
+      "Extracts both explicitly named topics (RNA-sequencing, ATAC-seq, t-SNE, UMAP) and implicitly embedded topics derived from methodology descriptions (cellular differentiation, gene expression, chromatin accessibility, epigenetic remodeling, transcription factor regulation, lineage specification)",
+      "Identifies overarching themes (stem cell biology, computational biology, transcriptomics, epigenetics) that connect multiple methodological components",
+      "Returns results as a JSON array of strings"
+    ],
+    "task_description": "\n            Extract topics out of a passage of text from a scholarly article into a JSON\n            array of strings\n            ",
+    "scenario": "Testing with a dense academic abstract containing implicit topics buried within methodology descriptions to assess whether the prompt extracts subtle themes beyond explicitly named topics"
+  },
+  {
+    "prompt_inputs": {
+      "content": "Recent advances in machine learning have revolutionized artificial intelligence applications across multiple domains. Deep neural networks, a subset of machine learning algorithms, have demonstrated exceptional performance in image recognition tasks through convolutional architectures. Furthermore, supervised learning techniques utilizing deep neural networks have achieved state-of-the-art results in natural language processing, while unsupervised learning methods continue to expand the capabilities of machine learning for anomaly detection. The intersection of deep learning and reinforcement learning has enabled breakthrough achievements in game-playing agents, showcasing how neural network-based approaches can optimize decision-making strategies in complex environments."
+    },
+    "solution_criteria": [
+      "Extracts all distinct topics without excessive duplication of hierarchically related concepts (e.g., 'deep neural networks' and 'machine learning' should both appear, but not repeated multiple times)",
+      "Returns output as a valid JSON array of strings",
+      "Captures specific application domains and methodologies mentioned in the passage"
+    ],
+    "task_description": "\n            Extract topics out of a passage of text from a scholarly article into a JSON\n            array of strings\n            ",
+    "scenario": "Testing with a passage containing overlapping or hierarchical topics (e.g., 'machine learning' and 'deep neural networks') to evaluate whether the prompt handles related concepts appropriately without excessive duplication"
+  },
+  {
+    "prompt_inputs": {
+      "content": "This study examines the intersection of climate change mitigation and urban development through a comparative analysis of green infrastructure implementation across three metropolitan regions. We investigate how permeable pavements, green roofs, and urban forests reduce heat island effects while simultaneously improving stormwater management and air quality. Our findings demonstrate that integrated climate adaptation strategies in cities require coordination between municipal planning departments, environmental agencies, and community stakeholders. We analyze carbon sequestration rates in different vegetation types, evaluate the economic costs and benefits of green infrastructure investments, and assess public health outcomes including respiratory disease reduction and mental health improvements from increased urban green space. The research also addresses policy frameworks governing sustainable urban design, technological innovations in building materials for energy efficiency, and social equity concerns regarding equitable distribution of environmental benefits across socioeconomic groups."
+    },
+    "solution_criteria": [
+      "Extraction identifies all major topics (climate change, urban development, green infrastructure types, environmental benefits, economic analysis, policy, public health, social equity)",
+      "Returned as a valid JSON array of strings",
+      "Topics are distinct and appropriately granular without excessive fragmentation or over-aggregation"
+    ],
+    "task_description": "\n            Extract topics out of a passage of text from a scholarly article into a JSON\n            array of strings\n            ",
+    "scenario": "Testing with a short passage containing minimal topics and a long, complex passage with numerous topics to verify the prompt's consistency in extraction across different text lengths and topic density levels"
+  }
+]
