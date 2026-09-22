@@ -356,13 +356,19 @@ if response.stop_reason == "tool_use":
 Each `tool_use` block carries everything you need to run the function:
 
 ```python
-for tool_block in tool_blocks:
-    name = tool_block.name     # which tool Claude wants to call
-    args = tool_block.input    # dict of arguments for that tool
-    tool_use_id = tool_block.id  # needed when you send the result back
+if response.stop_reason == "tool_use":
+    tool_blocks = [block for block in response.content if block.type == "tool_use"]
+    for tool_block in tool_blocks:
+        name = tool_block.name     # which tool Claude wants to call
+        args = tool_block.input    # dict of arguments for that tool
+        tool_use_id = tool_block.id  # needed when you send the result back
 
-    if name == "get_current_datetime":
-        result = get_current_datetime(**args)
+        # this is our mapping block, where we call the respective functions
+        if name == "get_current_datetime":
+            result = get_current_datetime(**args)
+        elif name == "add_duration_to_datetime":
+            result = add_duration_to_datetime(**args)
+        ...etc
 ```
 
 `tool_block.input` is a dictionary of the arguments Claude wants to pass to your function. Since your function expects keyword arguments rather than a dictionary, you use Python's unpacking syntax: `get_current_datetime(**tool_block.input)`.
@@ -452,7 +458,7 @@ The tool result block has several important properties:
 
 ### Handling Multiple Tool Calls
 
-Claude can request multiple tool calls in a single response. For example, if a user asks    `"What's 10 + 10 and what's 30 + 30?"`, Claude might respond with two separate ToolUse blocks.
+Claude can request multiple tool calls in a single response. For example, if a user asks  `"What's 10 + 10 and what's 30 + 30?"`, Claude might respond with two separate ToolUse blocks.
 
 <p align="center">
   <img src="images/multiple_tool_calls.png" alt="Multi-block Messages" width="450" height="250">
@@ -483,7 +489,7 @@ When sending the follow-up request, you must still include the tool schema even 
 final_response = client.messages.create(
     model=MODEL,
     max_tokens=MAX_TOKENS,
-    messages=messages,
+    messages=messages,  # includes entire history including tool calls
     tools=[get_current_datetime_schema]
 )
 
