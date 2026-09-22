@@ -132,7 +132,7 @@ In this section we'll review techniques of improving a naive prompt. We'll see t
 * Structure with XML tags
 * Providing Examples
 
-### Being Clear and Direct
+### 1. Being Clear and Direct
 
 The first line of your prompt is the most important part of your entire request. This is where you set the stage for everything that follows, and getting it right can dramatically improve your results.
 
@@ -161,7 +161,7 @@ Rather than asking _"I was reading about renewable energy and geothermal energy 
 
 Try: _"Identify three countries that use geothermal energy. Include generation stats for each."_
 
-### Putting It Into Practice
+#### Putting It Into Practice
 
 Let's see this technique in action. Starting with a weak prompt that simply asked `"What should this person eat?"` we can apply our clear and direct approach.
 
@@ -206,13 +206,13 @@ Graded 3/3 test cases
 Average score: 5.666666666666667
 ```
 
-### Results Matter
+#### Results Matter
 
 This simple change can have a significant impact on performance. In our example, the evaluation score jumped from `2.67` to `5.67` - a substantial improvement from just restructuring that opening line.
 
 The key takeaway is that **Claude responds best when you treat it like a capable assistant who needs clear direction rather than someone who has to guess what you want**. Start strong with a direct action verb, be specific about the task, and you'll see better results right away.## 
 
-### Being Specific
+### 2. Being Specific
 
 When working with Claude, one of the most effective ways to improve your results is to be specific about what you want. Instead of leaving everything up to the model's interpretation, you can provide clear guidelines or steps that direct Claude toward the kind of output you're looking for.
 
@@ -268,7 +268,7 @@ Guidelines:
 6. Keep budget-friendly if mentioned
 ```
 
-### When to Use Each Approach
+#### When to Use Each Approach
 
 Here's a practical guide for when to use each type of specificity:
 
@@ -338,7 +338,7 @@ Graded 3/3 test cases
 Average score: 6.333333333333333
 ```
 
-### Structure with XML Tags
+### 3. Structure with XML Tags
 
 When you're building prompts that include a lot of content, Claude can sometimes struggle to understand which pieces of text belong together or what different sections are supposed to represent. XML tags provide a simple way to add structure and clarity to your prompts, especially when you're interpolating large amounts of data.
 
@@ -497,7 +497,7 @@ results = evaluator.run_evaluation(
 )
 ```
 
-Running the above code I saw something like this - I didn't see any improvement, maybe because we have just 1 entity and adding XML in this specific case, makes really no difference to the overall prompt:
+Running the above code I saw something like this. As expected, I didn't see any dramatic improvement for this simple prompt:
 
 ```
 Graded 1/3 test cases
@@ -506,6 +506,178 @@ Graded 3/3 test cases
 Average score: 6.333333333333333
 ```
 
-### Providing Examples
+### 4. Providing Examples
 
-<< TODO >>
+**Providing examples in your prompts is one of the most effective prompt engineering techniques you'll use**. This approach, known as "one-shot" or "multi-shot" prompting, involves giving Claude sample input/output pairs to guide its responses.
+
+#### How Examples Work
+
+Let's look at a sentiment analysis example. Say you want Claude to categorize whether a tweet is positive or negative:
+
+```
+Categorize the sentiment of the below tweet:
+
+<input_tweet>
+Yeah, sure that was the best movie I hae seen since 'Plan 9 from outer space'
+</input_tweet>
+
+If the tweet has has positive sentiment, respond with 'Positive'. If it is negative, respond with 'Negative'.
+```
+
+The challenge here is sarcasm. A tweet like `"Yeah, sure, that was the best movie I've seen since 'Plan 9 from Outer Space'"` appears positive on the surface, but it's actually sarcastic and negative (Plan 9 is famously one of the worst movies ever made).
+
+#### Adding Examples to Handle Corner Cases
+
+To solve this, you can add examples that show Claude how to handle tricky cases:
+
+```
+Categorize the sentiment of the below tweet:
+
+<input_tweet>
+Yeah, sure that was the best movie I hae seen since 'Plan 9 from outer space'
+</input_tweet>
+
+If the tweet has has positive sentiment, respond with 'Positive'. If it is negative, respond with 'Negative'.
+
+Here is a example input with ideal response:
+<sample_input>
+Great game tonight.
+</sample_input>
+<ideal_output>
+Positive
+</ideal_output>
+
+Be especially careful with tweets that contain sarcasm.
+For example:
+<sample_input>
+Oh yeah, I really need a flight delay tonight! Excellent!
+</sample_input>
+<ideal_output>
+Negative
+</ideal_output>
+```
+
+The improved prompt includes:
+
+* A clear positive example: `"Great game tonight!"` → `"Positive"`
+* A sarcastic example: `"Oh yeah, I really needed a flight delay tonight! Excellent!"` → `"Negative"`
+
+Context explaining why sarcasm should be treated carefully
+Notice how the examples are wrapped in XML tags like `<sample_input>` and `<ideal_output>`. This structure makes it crystal clear to Claude what each part represents.
+
+#### When to Use Examples
+
+Examples are particularly useful for:
+
+* Capturing corner cases or edge scenarios
+* Defining complex output formats (like specific JSON structures)
+* Showing the exact style or tone you want
+* Demonstrating how to handle ambiguous inputs
+
+#### One-Shot vs Multi-Shot
+
+* `One-Shot`: Provide a single example to establish the pattern
+* `Multi-Shot`: Provide multiple examples to cover different scenarios
+
+Use `multi-shot` when you need to handle various edge cases or want to show different types of valid responses.
+
+#### Finding Good Examples from Evaluations
+
+When running prompt evaluations, look for your highest-scoring outputs to use as examples:
+
+![Finding Good Examples](images/finding_good_examples.png)
+
+Find responses that scored 10 (or your highest available score) and use those input/output pairs as examples in your prompt. This helps Claude understand what "perfect" output looks like for your specific use case.
+
+#### Adding Context to Examples
+
+Don't just provide the input/output pair - explain why the output is good:
+
+```
+<ideal_output>
+[Your example output here]
+</ideal_output>
+
+This example is well-structured, provides detailed information on food choices and quantities, and aligns with the athlete's goals and restrictions.
+```
+
+This additional context helps Claude understand the reasoning behind good responses, not just the format.
+
+#### Best Practices
+
+* Always use XML tags to structure your examples clearly
+* Be explicit about what you're showing: "Here is an example input with an ideal response"
+* Include examples that address your most common failure cases
+* Explain why your example outputs are considered ideal
+* Keep examples relevant to your specific task
+
+Examples are especially powerful because they show rather than tell. Instead of trying to describe exactly what you want in words, you demonstrate it directly. This makes your prompts much more reliable and helps Claude understand subtle requirements that might be hard to express in instructions alone.
+
+Here is a prompt that includes all the best practices listed above:
+
+```python
+
+clear_direct_specific_with_xml_and_examples = """
+Generate a one-day meal plan for an athlete that meets their dietary restrictions.
+
+<athlete_information> 
+- Height: {height} 
+- Weight: {weight} 
+- Goal: {goal} 
+- Dietary restrictions: {restrictions} 
+</athlete_information>
+
+Guidelines:
+1. Include accurate daily calorie amount
+2. Show protein, fat, and carb amounts
+3. Specify when to eat each meal
+4. Use only foods that fit restrictions
+5. List all portion sizes in grams
+6. Keep budget-friendly if mentioned
+
+Here is an example with a sample input and an ideal output:
+<sample_input>
+height: 170
+weight: 70
+goal: Maintain fitness and improve cholesterol levels
+restrictions: High cholesterol
+</sample_input>
+<ideal_output>
+Here is a one-day meal plan for an athlete aiming to maintain fitness and improve cholesterol levels:
+
+*   **Calorie Target:** Approximately 2500 calories
+*   **Macronutrient Breakdown:** Protein (140g), Fat (70g), Carbs (340g)
+
+**Meal Plan:**
+
+*   **Breakfast (7:00 AM):** Oatmeal (80g dry weight) with berries (100g) and walnuts (15g). Skim milk (240g).
+    *   Protein: 15g, Fat: 15g, Carbs: 60g
+*   **Mid-Morning Snack (10:00 AM):** Apple (150g) with almond butter (30g).
+    *   Protein: 7g, Fat: 18g, Carbs: 25g
+*   **Lunch (1:00 PM):** Grilled chicken breast (120g) salad with mixed greens (150g), cucumber (50g), tomato (50g), and a light vinaigrette dressing (30g). Whole wheat bread (60g).
+    *   Protein: 40g, Fat: 15g, Carbs: 70g
+*   **Afternoon Snack (4:00 PM):** Greek yogurt (170g, non-fat) with a banana (120g).
+    *   Protein: 20g, Fat: 0g, Carbs: 40g
+*   **Dinner (7:00 PM):** Baked salmon (140g) with steamed broccoli (200g) and quinoa (75g dry weight).
+    *   Protein: 40g, Fat: 20g, Carbs: 80g
+*   **Evening Snack (9:00 PM):** Small handful of almonds (20g).
+    *   Protein: 8g, Fat: 12g, Carbs: 15g
+
+This meal plan prioritizes lean protein sources, whole grains, fruits, and vegetables, while limiting saturated and trans fats to support healthy cholesterol levels.
+</ideal_output>
+This example meal plan is well-structured, provides detailed information on food choices and quantities, and aligns with the athlete's goals and restrictions.
+"""
+
+results = evaluator.run_evaluation(
+    run_prompt_function=run_prompt,
+    dataset_file="dataset.json",
+    prompt=clear_direct_specific_with_xml_and_examples,
+    extra_criteria="""
+    The output should include:
+    - Daily caloric total
+    - Macronutrient breakdown
+    - Meals with exact foods, portions, and timing
+    """,
+)
+
+```
