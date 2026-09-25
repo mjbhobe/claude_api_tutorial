@@ -73,7 +73,7 @@ The key insight is that RAG trades simplicity for scalability and efficiency. Wh
 
 ## Text Chunking Strategies
 
-Text chunking is one of the most critical steps in building a RAG (Retrieval Augmented Generation) pipeline. How you break up your documents directly impacts the quality of your entire system. A poor chunking strategy can lead to irrelevant context being inserted into your prompts, causing your AI to give completely wrong answers.
+Text chunking is one of the most critical steps in building a RAG pipeline. How you break up your documents directly impacts the quality of your entire system. A poor chunking strategy can lead to irrelevant context being inserted into your prompts, causing your AI to give completely wrong answers.
 
 <p align="center">
   <img src="images/chunking_strategies.png" alt="Chunking Strategies">
@@ -215,7 +215,7 @@ While it's helpful to imagine that one number might represent "how happy the tex
 
 ### VoyageAI for Embeddings
 
-Since **Anthropic doesn't currently provide embedding generation, the recommended provider is VoyageAI** (by MongoDB). 
+Since **Anthropic doesn't currently provide embedding generation, the recommended provider is VoyageAI** (by MongoDB).
 
 You'll need to:
 
