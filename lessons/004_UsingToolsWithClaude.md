@@ -867,6 +867,16 @@ Here's where things get a bit confusing: **while the tool schema is built into C
 
 When you use other tools, you write both the JSON schema and the function implementation. With the text editor tool, Claude provides the schema knowledge, but you must write functions to handle Claude's requests to create files, read directories, replace text, and so on.
 
+> **Why so?** Why didn't Anthropic implement the functionality of the Text Editor tool?
+>
+> Anthropic’s Claude API executes in the cloud, while a Text Editor or Bash tool operates directly against an actual file system and runtime environment. Anthropic deliberately defines only the tool specification—not the execution—due to security, architecture, and deployment constraints.
+>
+> Anthropic provides reference implementations of the editor and bash runners in their open-source [anthropic-quickstarts](https://github.com/anthropics/claude-quickstarts?utm_source=gemini) repository (typically inside Docker containers), but leaves the production execution layer in your hands> **Why so?** Why didn't Anthropic implement the functionality of the Text Editor tool?
+>
+> Anthropic’s Claude API executes in the cloud, while a Text Editor or Bash tool operates directly against an actual file system and runtime environment. Anthropic deliberately defines only the tool specification—not the execution—due to security, architecture, and deployment constraints.
+>
+> Anthropic provides reference implementations of the editor and bash runners in their open-source [anthropic-quickstarts](https://github.com/anthropics/claude-quickstarts?utm_source=gemini) repository (typically inside Docker containers), but leaves the production execution layer in your hands
+
 ### Schema Versions
 
 While the main schema is built into Claude, you do need to include a small schema stub when making requests. The exact schema depends on which Claude model you're using:
@@ -917,62 +927,86 @@ Essentially, the text editor tool lets you replicate much of the functionality o
 
 ## Using Web Search
 
-Important note: Your organization must enable the Web Search tool in the settings console before using it. You can find this setting here: https://console.anthropic.com/settings/privacy
+> **Important note:** Your organization must enable the Web Search tool in the settings console before using it. You can find this setting here: https://console.anthropic.com/settings/privacy
 
-Claude includes a built-in web search tool that lets it search the internet for current or specialized information to answer user questions. Unlike other tools where you need to provide the implementation, Claude handles the entire search process automatically - you just need to provide a simple schema to enable it.
+Claude includes a built-in web search tool that lets it search the internet for current or specialized information to answer user questions. **Unlike other tools, like the `TextEditor` tool above, where you need to provide the implementation, Claude handles the entire search process automatically - you just need to provide a simple schema to enable it**.
 
+### Setting Up the Web Search Tool
 
-
-Setting Up the Web Search Tool
 To use the web search tool, you create a schema object with these required fields:
 
+```python
 web_search_schema = {
     "type": "web_search_20250305",
     "name": "web_search", 
     "max_uses": 5
 }
-The max_uses field limits how many searches Claude can perform. Claude might do follow-up searches based on initial results, so this prevents excessive API calls. A single search returns multiple results, but Claude may decide additional searches are needed.
+```
 
-How the Response Works
+The `max_uses` field **limits how many searches** Claude can perform. Claude might do follow-up searches based on initial results, so this prevents excessive API calls. A single search returns multiple results, but Claude may decide additional searches are needed.
+
+And this is how you would call the search tool:
+
+```python
+messages = []
+add_user_message(
+    messages,
+    """
+    What's the best exercise for gaining leg muscle?
+    """,
+)
+response = chat(messages, tools=[web_search_schema])
+response
+```
+
+### How the Response Works
+
 When Claude uses the web search tool, the response contains several types of blocks:
 
-Text blocks - Claude's explanation of what it's doing
-ServerToolUseBlock - Shows the exact search query Claude used
-WebSearchToolResultBlock - Contains the search results
-WebSearchResultBlock - Individual search results with titles and URLs
-Citation blocks - Text that supports Claude's statements
-
+* `Text blocks` - Claude's explanation of what it's doing
+* `ServerToolUseBlock` - Shows the exact search query Claude used
+* `WebSearchToolResultBlock` - Contains the search results
+* `WebSearchResultBlock` - Individual search results with titles and URLs
+* `Citation blocks` - Text that supports Claude's statements
 
 The response structure lets you see exactly what Claude searched for and which sources it found. Citations include the specific text Claude used to support its answers, along with the source URLs.
 
-Restricting Search Domains
+![Type of Search Blocks](images/types_of_search_blocks.png)
+
+### Restricting Search Domains
+
 You can limit searches to specific domains using the allowed_domains field. This is particularly useful when you want reliable, authoritative sources:
 
+```python
 web_search_schema = {
     "type": "web_search_20250305",
     "name": "web_search",
     "max_uses": 5,
     "allowed_domains": ["nih.gov"]
 }
-For example, when asking about medical or exercise advice, restricting to domains like PubMed (nih.gov) ensures you get evidence-based information rather than random blog content.
+```
 
+For example, when asking about medical or exercise advice, restricting to domains like PubMed (`nih.gov`) ensures you get evidence-based information rather than random blog content.
 
+### Rendering Search Results
 
-Rendering Search Results
 The different block types in the response are designed for specific UI rendering:
 
-Render text blocks as regular content
-Display web search results as a list of sources at the top
-Show citations inline with the text, including the source domain, page title, URL, and quoted text
+* Render text blocks as regular content
+* Display web search results as a list of sources at the top
+* Show citations inline with the text, including the source domain, page title, URL, and quoted text
 
+![Rendering Search Blocks](images/rendering_search_blocks.png)
 
 This structure helps users understand how Claude arrived at its answers and provides transparency about the sources being used. The citation format makes it clear which specific information came from which sources, building trust in the AI's responses.
 
-Practical Usage
+### Practical Usage
+
 The web search tool works best for:
 
-Current events and recent developments
-Specialized information not in Claude's training data
-Fact-checking and finding authoritative sources
-Research tasks requiring up-to-date information
+* Current events and recent developments
+* Specialized information not in Claude's training data
+* Fact-checking and finding authoritative sources
+* Research tasks requiring up-to-date information
+
 Simply include the schema in your tools array when making API calls, and Claude will automatically decide when a web search would help answer the user's question.
