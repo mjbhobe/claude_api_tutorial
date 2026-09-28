@@ -6,9 +6,9 @@
 
 Extended thinking is Claude's **advanced reasoning feature that gives the model time to work through complex problems before generating a final response**. Think of it as Claude's "scratch paper" - you can see the reasoning process that leads to the answer, which helps with transparency and often results in better quality responses.
 
-> 📌 **Important Note:** Extended Thinking is **not compatible** with some other features, notable message pre-filling and temperature. 
+> 📌 **Important Note:** Extended Thinking is **not compatible** with some other features, notable message `pre-filling` and `temperature`. 
 >
-> See the full list of restrictions here: https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#feature-compatibility
+> See the full list of restrictions [here](https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#feature-compatibility)
 
 ### How Extended Thinking Works
 
@@ -56,9 +56,12 @@ To enable extended thinking in your code, you need to add two parameters to your
 
 ```python
 def chat(
+    client,
+    model,
     messages,
     system=None,
     temperature=1.0,
+    max_tokens=4096,
     stop_sequences=[],
     tools=None,
     ## these 2 are additional params for extended thinking!
@@ -67,7 +70,7 @@ def chat(
 ):
 ```
 
-The thinking budget sets the maximum tokens Claude can use for reasoning. The minimum value is 1024 tokens, and your max_tokens parameter must be greater than your thinking budget.
+The thinking budget sets the maximum tokens Claude can use for reasoning. The minimum value is 1024 tokens, and your `max_tokens` parameter must be greater than your thinking budget.
 
 Add the thinking configuration to your API parameters:
 
@@ -82,7 +85,7 @@ if thinking:
 Then call it with thinking enabled:
 
 ```python
-chat(messages, thinking=True)
+chat(client, model, messages, thinking=True, ...)
 ```
 
 ### Testing Redacted Responses
@@ -153,7 +156,6 @@ You can dramatically improve Claude's accuracy by:
 * Providing detailed guidelines and analysis steps
 * Using one-shot or multi-shot examples
 * Breaking down complex tasks into smaller steps
-
 
 ### Step-by-Step Analysis
 
@@ -517,30 +519,140 @@ For the cache to be useful in follow-up requests, the content must be identical 
 
 Cache breakpoints can span across multiple messages and message types. If you place a breakpoint in a later message, all previous messages (user, assistant, etc.) will be included in the cached content.
 
-
 This is particularly useful for conversations where you want to cache the entire context up to a certain point.
 
-System Prompts and Tools
+### System Prompts and Tools
+
 You're not limited to text blocks - cache breakpoints can be added to:
 
-System prompts
-Tool definitions
-Image blocks
-Tool use and tool result blocks
+* System prompts
+* Tool definitions
+* Image blocks
+* Tool use and tool result blocks
 
 System prompts and tool definitions are excellent candidates for caching since they rarely change between requests. This is often where you'll get the most benefit from prompt caching.
 
-Cache Ordering
-Behind the scenes, Claude processes your request components in a specific order: tools first, then system prompt, then messages. Understanding this order helps you place breakpoints effectively.
+### Cache Ordering
 
+Behind the scenes, Claude processes your request components in a specific order: tools first, then system prompt, then messages. Understanding this order helps you place breakpoints effectively.
 
 You can add up to four cache breakpoints total. For example, you might cache your tools, then add another breakpoint partway through your conversation history. This gives you flexibility in what gets cached when different parts of your request change.
 
+### Minimum Content Length
 
-Minimum Content Length
 There's a minimum threshold for caching: content must be at least 1024 tokens long to be cached. This is the sum of all messages and blocks you're trying to cache, not individual blocks.
-
 
 A simple "Hi there!" message won't meet this threshold, but if you duplicate that content 500 times (or have a genuinely long prompt), it will exceed 1024 tokens and be eligible for caching.
 
 The key to effective prompt caching is identifying which parts of your requests stay consistent across multiple calls and placing breakpoints strategically to maximize reuse while minimizing cache invalidation.
+
+## Code Execution and Files API
+
+The Anthropic API offers two powerful features that work exceptionally well together: the `Files API` and `Code Execution`. While they might seem separate at first, combining them opens up some really interesting possibilities for delegating complex tasks to Claude.
+
+### Files API
+
+The `Files API` provides an alternative way to `handle file uploads`. Instead of encoding images or PDFs directly in your messages as base64 data, you can upload files ahead of time and reference them later.
+
+#### Here's how it works:
+
+* `Upload your file` (image, PDF, text, etc.) to Claude using a separate API call
+* `Receive a file metadata` object containing a `unique file ID`
+* `Reference that file ID` in future messages instead of including raw file data
+
+This approach is **particularly useful when you want to reference the same file multiple times or when working with larger files** that would be cumbersome to include in every request.
+
+#### Code Execution Tool
+
+`Code execution is a server-based tool` that **doesn't require you to provide an implementation**. You simply **include a predefined tool schema in your request**, and Claude can optionally execute Python code in an isolated Docker container.
+
+Key characteristics of the code execution environment:
+
+* Runs in an isolated Docker container
+* No network access (can't make external API calls)
+* Claude can execute code multiple times during a single conversation
+* Results are captured and interpreted by Claude for the final response
+
+### Combining Files API and Code Execution
+
+The real power comes from using these features together. Since the Docker containers have no network access, the Files API becomes the primary way to get data in and out of the execution environment.
+
+Here's a typical workflow:
+
+1. Upload your data file (like a CSV) using the Files API
+2. Include a container upload block in your message with the file ID
+3. Ask Claude to analyze the data
+4. Claude writes and executes code to process your file
+5. Claude can generate outputs (like plots) that you can download
+
+#### Practical Example
+
+Let's look at a real example using streaming service data. The CSV file (`streaming.csv`) contains user information including subscription tiers, viewing habits, and whether they've churned (canceled their subscription).
+
+Here is a sample:
+![streaming.csv sample](images/streaming_csv_sample.jpg)
+
+First, upload the file using a helper function:
+
+```python
+file_metadata = upload('streaming.csv')
+```
+
+Then create a message that includes both the uploaded file **and** a request for analysis, like so:
+
+```python
+messages = []
+add_user_message(
+    messages,
+    [
+        {
+            "type": "text",
+            "text": """Run a detailed analysis to determine major drivers of churn.
+            Your final output should include at least one detailed plot summarizing your findings."""
+        },
+        {"type": "container_upload", "file_id": file_metadata.id},
+    ],
+)
+
+chat(
+    messages,
+    tools=[{"type": "code_execution_20250522", "name": "code_execution"}]
+)
+```
+
+#### Understanding the Response
+
+When Claude uses code execution, the response contains multiple types of blocks:
+
+* `Text blocks` - Claude's analysis and explanations
+* `Server tool use blocks` - The actual code Claude decided to run
+* `Code execution tool result blocks` - Output from running the code
+
+![Code Execution Response Blocks](images/code_execution_response_blocks.jpg)
+
+Claude might _execute code multiple times_ during a single response, iteratively building up its analysis. Each execution cycle includes the code and its results.
+
+#### Downloading Generated Files
+
+One of the most powerful features is Claude's ability to generate files (like plots or reports) and make them available for download. When Claude creates a visualization, it gets stored in the container and you can download it using the Files API.
+
+Look for blocks with type: `"code_execution_output"` in the response - these contain file IDs for generated content:
+
+```python
+download_file("file_id_from_response")
+```
+
+![Sample Analysis](images/sample_analysis.jpg)
+
+The result is a comprehensive analysis with professional visualizations that would have taken significant manual coding to produce.
+
+### Beyond Data Analysis
+
+While data analysis is a natural fit, the combination of Files API and code execution opens up many possibilities:
+
+* Image processing and manipulation
+* Document parsing and transformation
+* Mathematical computations and modeling
+* Report generation with custom formatting
+
+The key is that you can delegate complex, computational tasks to Claude while maintaining control over the inputs and outputs through the Files API. This creates a powerful workflow where Claude becomes your coding assistant that can actually execute and iterate on solutions.

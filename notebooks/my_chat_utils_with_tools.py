@@ -1,6 +1,7 @@
 # modified helper functions
 from anthropic.types import Message
 from rich.console import Console
+from pathlib import Path
 
 
 def add_user_message(messages, message):
@@ -48,7 +49,7 @@ def chat(
     client,
     model,
     messages,
-    system=None,
+    system_prompt=None,
     temperature=1.0,
     max_tokens=4096,
     stop_sequences=[],
@@ -70,6 +71,7 @@ def chat(
         "extra_body": {"temperature": temperature},
     }
 
+    # enable thinking
     if thinking:
         params["thinking"] = {
             "type": "enabled",
@@ -77,10 +79,27 @@ def chat(
         }
 
     if tools:
-        params["tools"] = tools
+        # why these 4 lines of code?
+        # I could have easily done
+        #   tools[-1]["cache_control"] = {"type" : "ephemeral"}
+        # If we decide to change the tool scheme order, then
+        # we'll land up adding too many unintended cache breakpoints
+        # these 4 lines ensure that only the last tool gets the breakpoint
+        tools_clone = tools.copy()
+        last_tool = tools_clone[-1].copy()
+        last_tool["cache_control"] = {"type": "ephemeral"}
+        tools_clone[-1] = last_tool
+        params["tools"] = tools_clone
 
-    if system:
-        params["system"] = system
+    if system_prompt:
+        # params["system"] = system_prompt
+        params["system"] = [
+            {
+                "type": "text",
+                "text": system_prompt,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ]
 
     message = client.messages.create(**params)
     return message
@@ -90,7 +109,7 @@ def chat_stream(
     client,
     model,
     messages,
-    system=None,
+    system_prompt=None,
     temperature=1.0,
     stop_sequences=[],
     # for adding tools capability
@@ -123,10 +142,27 @@ def chat_stream(
         params["tool_choice"] = tool_choice
 
     if tools:
-        params["tools"] = tools
+        # why these 4 lines of code?
+        # I could have easily done
+        #   tools[-1]["cache_control"] = {"type" : "ephemeral"}
+        # If we decide to change the tool scheme order, then
+        # we'll land up adding too many unintended cache breakpoints
+        # these 4 lines ensure that only the last tool gets the breakpoint
+        tools_clone = tools.copy()
+        last_tool = tools_clone[-1].copy()
+        last_tool["cache_control"] = {"type": "ephemeral"}
+        tools_clone[-1] = last_tool
+        params["tools"] = tools_clone
 
-    if system:
-        params["system"] = system
+    if system_prompt:
+        # params["system"] = system_prompt
+        params["system"] = [
+            {
+                "type": "text",
+                "text": system_prompt,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ]
 
     if betas:
         params["betas"] = betas
@@ -335,3 +371,37 @@ def add_user_media_message(
             # {"type": "text", "text": user_message},
         ],
     )
+
+
+def upload(client, file_path: str):
+    path = Path(file_path)
+    extension = path.suffix.lower()
+
+    mime_type_map = {
+        ".pdf": "application/pdf",
+        ".txt": "text/plain",
+        ".md": "text/plain",
+        ".py": "text/plain",
+        ".js": "text/plain",
+        ".html": "text/plain",
+        ".css": "text/plain",
+        ".csv": "text/csv",
+        ".json": "application/json",
+        ".xml": "application/xml",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".xls": "application/vnd.ms-excel",
+        ".jpeg": "image/jpeg",
+        ".jpg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+    }
+
+    mime_type = mime_type_map.get(extension)
+
+    if not mime_type:
+        raise ValueError(f"Unknown mimetype for extension: {extension}")
+    filename = path.name
+
+    with open(file_path, "rb") as file:
+        return client.beta.files.upload(file=(filename, file, mime_type))
