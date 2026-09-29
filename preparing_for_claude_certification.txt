@@ -1,0 +1,7 @@
+To prepare for Claude certification, you have 2 sources:
+
+* Anthropic Academy
+* credfarmer (it's good)
+
+Also, a trick is to give Claude the syllabus and
+ask it to simulate the practice tests.
