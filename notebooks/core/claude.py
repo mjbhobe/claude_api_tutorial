@@ -10,18 +10,14 @@ class Claude:
     def add_user_message(self, messages: list, message):
         user_message = {
             "role": "user",
-            "content": message.content
-            if isinstance(message, Message)
-            else message,
+            "content": message.content if isinstance(message, Message) else message,
         }
         messages.append(user_message)
 
     def add_assistant_message(self, messages: list, message):
         assistant_message = {
             "role": "assistant",
-            "content": message.content
-            if isinstance(message, Message)
-            else message,
+            "content": message.content if isinstance(message, Message) else message,
         }
         messages.append(assistant_message)
 
@@ -34,6 +30,7 @@ class Claude:
         self,
         messages,
         system=None,
+        max_tokens=8 * 1024,
         temperature=1.0,
         stop_sequences=[],
         tools=None,
@@ -42,10 +39,14 @@ class Claude:
     ) -> Message:
         params = {
             "model": self.model,
-            "max_tokens": 8000,
+            "max_tokens": max_tokens,
             "messages": messages,
-            "temperature": temperature,
             "stop_sequences": stop_sequences,
+            # this will work with older (<1.1.0) SDK
+            # "temperature": temperature,
+            # ------------------------------
+            # for 1.1.0+ SDK use the following
+            "extra_body": {"temperature": temperature},
         }
 
         if thinking:
