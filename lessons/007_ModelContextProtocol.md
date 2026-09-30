@@ -352,45 +352,198 @@ Resources in MCP allow your server to expose data that can be directly included 
 
 When you've defined resources on your MCP server, your client needs a way to request and use them. The client acts as a bridge between your application and the MCP server, handling the communication and data parsing automatically.
 
+![MCP Accessing Resources](images/mcp_accessing_resources.png)
 
-The flow is straightforward: when a user wants to reference a document (like typing "@report.pdf"), your application uses the MCP client to fetch that resource from the server and include its contents directly in the prompt sent to Claude.
+The flow is straightforward: when a user wants to reference a document (like typing `"@report.pdf"`), your application uses the MCP client to fetch that resource from the server and include its contents directly in the prompt sent to Claude.
 
-Implementing Resource Reading
-The core functionality requires a read_resource function in your MCP client. This function takes a URI parameter identifying which resource to fetch:
+#### Implementing Resource Reading
 
+The core functionality requires a `read_resource` function in your MCP client. This function takes a URI parameter identifying which resource to fetch:
+
+```python
 async def read_resource(self, uri: str) -> Any:
     result = await self.session().read_resource(AnyUrl(uri))
     resource = result.contents[0]
+```
+
 The response from the MCP server contains a contents list. You typically only need the first element, which contains the actual resource data along with metadata like the MIME type.
 
-Handling Different Content Types
+#### Handling Different Content Types
+
 Resources can return different types of content, so your client needs to parse them appropriately. The MIME type tells you how to handle the data:
 
+```python
 if isinstance(resource, types.TextResourceContents):
     if resource.mimeType == "application/json":
         return json.loads(resource.text)
     
     return resource.text
+```
+
 This approach ensures that JSON resources are properly parsed into Python objects, while plain text resources are returned as strings. The MIME type acts as your hint for determining the correct parsing strategy.
 
-Required Imports
+#### Required Imports
+
 To make this work properly, you'll need these imports in your MCP client:
 
+```python
 import json
 from pydantic import AnyUrl
+```
+
 The json module handles parsing JSON responses, while AnyUrl ensures proper type handling for the URI parameter.
 
-Testing Resource Access
-Once implemented, you can test the functionality through your CLI application. When you type something like "What's in the @report.pdf document?", the system should:
+#### Testing Resource Access
 
-Show available resources in an autocomplete list
-Allow you to select a resource
-Fetch the resource content automatically
-Include that content in the prompt to Claude
+Once implemented, you can test the functionality through your CLI application. When you type something like `"What's in the @report.pdf document?"`, the system should:
+
+* Show available resources in an autocomplete list
+* Allow you to select a resource
+* Fetch the resource content automatically
+* Include that content in the prompt to Claude
 
 The key advantage is that Claude receives the document content directly in the prompt, eliminating the need for tool calls to access the information. This makes interactions faster and more efficient.
 
-Integration with Your Application
-Remember that the MCP client code you write gets used by other parts of your application. The read_resource function becomes a building block that other components can call to fetch document contents, list available resources, or integrate resource data into prompts.
+#### Integration with Your Application
+
+Remember that the MCP client code you write gets used by other parts of your application. The `read_resource` function becomes a building block that other components can call to fetch document contents, list available resources, or integrate resource data into prompts.
 
 This separation of concerns keeps your code clean: the MCP client handles communication with the server, while your application logic focuses on how to use that data effectively.
+
+## Defining Prompts
+
+Prompts in MCP servers let you define pre-built, high-quality instructions that clients can use instead of writing their own prompts from scratch. Think of them as carefully crafted templates that give better results than what users might come up with on their own.
+
+### Why Use Prompts?
+
+Let's say you want Claude to reformat a document into markdown. A user could just type `"convert report.pdf to markdown"` and it would work fine. But they'd probably get much better results with a thoroughly tested prompt that includes specific instructions about formatting, structure, and output requirements.
+
+The key insight is that while users can accomplish these tasks on their own, they'll get more consistent and higher-quality results when using prompts that have been carefully developed and tested by the MCP server authors.
+
+### How Prompts Work
+
+Prompts define a set of user and assistant messages that clients can use directly. When a client requests a prompt, your server returns a list of messages that can be sent straight to Claude.
+
+
+The basic structure looks like this:
+
+* Define prompts using the `@mcp.prompt()` decorator
+* Add a name and description for each prompt
+* Return a list of messages that form the complete prompt
+* These prompts should be high quality, well-tested, and relevant to your MCP server's purpose
+
+#### Building a Format Command
+
+Here's how to implement a document formatting prompt. First, you'll need to import the base message types:
+
+```python
+from mcp.server.fastmcp import base
+Then define your prompt function:
+
+@mcp.prompt(
+    name="format",
+    description="Rewrites the contents of the document in Markdown format."
+)
+def format_document(
+    doc_id: str = Field(description="Id of the document to format")
+) -> list[base.Message]:
+    prompt = f"""
+Your goal is to reformat a document to be written with markdown syntax.
+
+The id of the document you need to reformat is:
+
+{doc_id}
+
+
+Add in headers, bullet points, tables, etc as necessary. Feel free to add in extra formatting.
+Use the 'edit_document' tool to edit the document. After the document has been reformatted...
+"""
+    
+    return [
+        base.UserMessage(prompt)
+    ]
+```
+
+#### Testing Your Prompts
+
+You can test prompts using the MCP Inspector. Navigate to the Prompts section, select your prompt, and provide any required parameters. The inspector will show you the generated messages that would be sent to Claude.
+
+This lets you verify that your prompt interpolates variables correctly and produces the expected message structure before using it in a real application.
+
+### Best Practices
+
+When creating prompts for your MCP server:
+
+* Focus on tasks that are central to your server's purpose
+* Write detailed, specific instructions rather than vague requests
+* Test your prompts thoroughly with different inputs
+* Include clear descriptions so users understand what each prompt does
+* Consider how the prompt will work with your server's tools and resources
+
+Remember that prompts are meant to provide value that users couldn't easily get on their own - they should represent your expertise in the domain your MCP server covers.
+
+## Prompts in the Client
+
+Prompts in MCP define a set of user and assistant messages that can be used by the client. These prompts should be high quality, well-tested, and relevant to the overall purpose of the MCP server.
+
+### Implementing List Prompts
+
+The first step is implementing the list_prompts method in your MCP client. This method retrieves all available prompts from the server:
+
+```python
+async def list_prompts(self) -> list[types.Prompt]:
+    result = await self.session().list_prompts()
+    return result.prompts
+```
+
+This simple implementation calls the session's `list_prompts` method and returns the prompts array from the result.
+
+### Getting Individual Prompts
+
+The `get_prompt` method retrieves a specific prompt with arguments interpolated into it. When you request a prompt, you provide arguments that get passed to the prompt function as keyword arguments:
+
+```python
+async def get_prompt(self, prompt_name, args: dict[str, str]):
+    result = await self.session().get_prompt(prompt_name, args)
+    return result.messages
+```
+
+The method returns the messages from the result, which form a conversation that can be fed directly into Claude.
+
+### How Prompt Arguments Work
+
+When you define a prompt function on the server side, it can accept parameters. For example, a document formatting prompt might expect a `doc_id` parameter:
+
+```python
+def format_document(doc_id: str):
+    # The doc_id gets interpolated into the prompt
+```
+
+When the client calls `get_prompt`, the arguments dictionary should contain the expected keys. The MCP server will pass these as keyword arguments to the prompt function, allowing dynamic content to be inserted into the prompt template.
+
+### Testing Prompts in the CLI
+
+Once implemented, you can test prompts through the command-line interface. When you type a forward slash (`/`), available prompts appear as commands. Selecting a prompt may prompt you to choose from available options (like document IDs), and then the complete prompt gets sent to Claude.
+
+![MCP Testing](images/mcp_testing1.jpg)
+
+The workflow looks like this:
+
+1. User selects a prompt (like "format")
+2. System prompts for required arguments (like which document to format)
+3. The prompt gets sent to Claude with the interpolated values
+4. Claude can then use tools to fetch additional data and complete the task
+
+![MCP Testing 2](images/mcp_testing2.jpg)
+
+#### Prompt Best Practices
+
+When creating prompts for your MCP server:
+
+* Make them relevant to your server's purpose
+* Test them thoroughly before deployment
+* Use clear, specific instructions
+* Design them to work well with your available tools
+* Consider what arguments users will need to provide
+
+Prompts bridge the gap between predefined functionality and dynamic user needs, giving Claude structured starting points for complex tasks while maintaining flexibility through parameterization.
