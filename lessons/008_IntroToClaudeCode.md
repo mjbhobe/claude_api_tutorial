@@ -1,18 +1,6 @@
-# Anthropic Applications
+# Claude Code
 
-In this document, we'll explore two powerful applications built by Anthropic: `Claude Code` and `Computer Use`. These aren't just useful tools on their own - they're perfect examples of AI agents in action. By understanding how they work, you'll get a solid foundation for building your own agents later.
-
-## Our Plan
-
-We'll follow a progression that builds your understanding step by step:
-
-![Anthropic Apps Plan](images/anthropic_apps_plan.png)
-
-* **Claude Code** - Start with this agentic coding assistant that runs in your terminal
-* **Computer Use** - Explore this set of tools that lets Claude interact with desktop applications
-* **Agents** - Understand what makes these applications successful as agents
-
-### Claude Code
+## Introduction
 
 Claude Code is a **terminal-based coding assistant that can help you with various programming tasks**. Think of it as having Claude available right in your command line, ready to:
 
@@ -58,7 +46,9 @@ The MCP integration is particularly powerful because it means you can extend Cla
 
 Claude Code works across MacOS, Windows WSL, and Linux, so you can use it regardless of your development environment.
 
-### Installation
+## Installation
+
+Installation is a 3 step process:
 
 1. Install `node.js`
 
@@ -70,7 +60,7 @@ Following instructions at [https://nodejs.org/en/download](https://nodejs.org/en
 npm install -g @anthropic-ai/claude-code
 ```
 
-3. Start Claude Code: In your terminal, navigate to any folder and then run `claude`. 
+3. Start Claude Code: In your terminal, navigate to any folder and then run `claude`.
 
 ```bash
 claude
@@ -137,19 +127,24 @@ Claude works best when you approach it as an effort multiplier. The more context
 
     Once you have a solid plan, ask Claude to implement it. Claude will write code based on the context and planning work you've already done together.
 
-Test-Driven Development Workflow
+### Test-Driven Development Workflow
+
 For even better results, you can use a test-driven approach:
 
+![Claude Code - TDD Workflow](images/claude_code_tdd_workflow.jpg)
 
-Feed context into Claude - Same as before, show Claude relevant files
-Ask Claude to think of test cases - Have Claude brainstorm what tests would validate your new feature
-Ask Claude to implement those tests - Select the most relevant tests and have Claude write them
-Ask Claude to write code that passes the tests - Claude will iterate on the implementation until all tests pass
+1. **Feed context into Claude** - Same as before, show Claude relevant files
+2. **Ask Claude to think of test cases** - Have Claude brainstorm what tests would validate your new feature
+3. **Ask Claude to implement those tests** - Select the most relevant tests and have Claude write them
+4. **Ask Claude to write code that passes the tests** - Claude will iterate on the implementation until all tests pass
+
 This approach often produces more robust code because Claude has clear success criteria to work toward.
 
-Practical Example
+#### Practical Example
+
 Here's how these workflows look in practice. Let's say you want to add a document conversion tool to an existing project:
 
+```bash
 // First, ask Claude to read relevant files
 > Read the math.py and document.py files
 
@@ -168,14 +163,80 @@ Here's how these workflows look in practice. Let's say you want to add a documen
 
 // Finally, ask for implementation
 > Implement the plan
+```
+
 Claude will then create the function, update the necessary files, write tests, and even run the test suite to verify everything works correctly.
 
-Additional Commands
+### Additional Commands
+
 Claude Code includes several helpful commands:
 
-/clear - Clears conversation history and resets context
-/init - Scans codebase and creates CLAUDE.md documentation
-# - Adds notes to your CLAUDE.md file
+* `/clear` - Clears conversation history and resets context
+* `/init` - Scans codebase and creates `CLAUDE.md` documentation
+* `#` - Adds notes to your `CLAUDE.md` file
+
 Claude can also handle routine development tasks like staging and committing changes to git, running tests, and managing dependencies. Instead of switching between your editor and terminal, you can ask Claude to handle these tasks while you focus on the bigger picture.
 
 The key to success with Claude Code is remembering that it's designed to be a collaborative partner, not just a code generator. The more context and structure you provide, the more effectively Claude can help you build and maintain your projects.
+
+## Enhancements with MCP Servers
+
+Claude Code has an MCP client built right into it, which means you can connect MCP servers to dramatically expand what Claude can do. This opens up some really powerful possibilities for customizing your development workflow.
+
+### How MCP Extends Claude
+
+The Model Context Protocol allows Claude Code to connect to external services and tools through MCP servers. Instead of being limited to Claude's built-in capabilities, you can add custom functionality by connecting servers that provide specific tools, resources, or integrations.
+
+![Claude MCP Integration](images/claude_mcp_integration1.png)
+
+Each MCP server can expose different types of functionality to Claude through three main components: `Tools` (for taking actions), `Prompts` (for templates), and `Resources` (for accessing data).
+
+### Setting Up an MCP Server
+
+Adding an MCP server to Claude Code is straightforward. You use the command line to register your server:
+
+```bash
+claude mcp add [server-name] [command-to-start-server]
+```
+
+For example, if you have a document processing server that starts with `uv run main.py`, you'd run:
+
+```bash
+claude mcp add documents uv run main.py
+```
+
+Once registered, Claude Code will automatically connect to your server when it starts up.
+
+### Example: Document Processing
+
+A practical example is creating a tool that lets Claude read PDF and Word documents. By building an MCP server with a `"document_path_to_markdown"` tool, you can ask Claude to convert document contents to markdown format.
+
+![Claude MCP Integration - Example](images/claude_mcp_integration2.png)
+
+When you ask Claude to `"Convert the tests/fixtures/mcp_docs.docx file to markdown"`, it will automatically use your custom tool to read the document and return the converted content.
+
+![Claude MCP Integration - Calling your tools](images/claude_mcp_integration3.png)
+
+### Popular MCP Integrations
+
+The MCP ecosystem includes servers for many common development tools and services:
+
+![Claude MCP Integration - Popular Integrations](images/claude_mcp_integration4.png)
+
+* `sentry-mcp` - Automatically discover and fix bugs logged in Sentry
+* `playwright-mcp` - Gives Claude browser automation capabilities for testing and troubleshooting
+* `figma-context-mcp` - Exposes Figma designs to Claude
+* `mcp-atlassian` - Allows Claude to access Confluence and Jira
+* `firecrawl-mcp-server` - Adds web scraping capabilities to Claude
+* `slack-mcp` - Allows Claude to post messages or reply to specific threads
+
+### Building Your Development Workflow
+
+The real power comes from combining multiple MCP servers that match your specific development process. You might set up:
+
+* A Sentry server to fetch production error details
+* A Jira server to read ticket requirements
+* A Slack server to notify your team when work is complete
+* Custom servers for your internal tools and APIs
+
+This creates a development environment where Claude can seamlessly work with all the tools and services you already use, making it a much more powerful coding assistant tailored to your specific workflow.

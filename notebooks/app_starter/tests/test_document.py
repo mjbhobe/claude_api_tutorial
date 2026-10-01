@@ -1,6 +1,6 @@
 import os
 import pytest
-from tools.document import binary_document_to_markdown
+from tools.document import binary_document_to_markdown, document_path_to_markdown
 
 
 class TestBinaryDocumentToMarkdown:
@@ -47,3 +47,43 @@ class TestBinaryDocumentToMarkdown:
         assert len(result) > 0
         # Check for typical markdown formatting - this will depend on your actual test file
         assert "#" in result or "-" in result or "*" in result
+
+
+class TestDocumentPathToMarkdown:
+    FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
+    DOCX_FIXTURE = os.path.join(FIXTURES_DIR, "mcp_docs.docx")
+    PDF_FIXTURE = os.path.join(FIXTURES_DIR, "mcp_docs.pdf")
+
+    def test_document_path_to_markdown_with_docx(self):
+        """Test converting a DOCX file from its path."""
+        result = document_path_to_markdown(self.DOCX_FIXTURE)
+
+        assert isinstance(result, str)
+        assert len(result) > 0
+
+    def test_document_path_to_markdown_with_pdf(self):
+        """Test converting a PDF file from its path."""
+        result = document_path_to_markdown(self.PDF_FIXTURE)
+
+        assert isinstance(result, str)
+        assert len(result) > 0
+
+    def test_document_path_matches_binary_conversion(self):
+        """Path-based conversion should equal converting the same bytes directly."""
+        with open(self.PDF_FIXTURE, "rb") as pdfFile:
+            expectedMarkdown = binary_document_to_markdown(pdfFile.read(), "pdf")
+
+        assert document_path_to_markdown(self.PDF_FIXTURE) == expectedMarkdown
+
+    def test_document_path_to_markdown_missing_file(self):
+        """A nonexistent path raises FileNotFoundError."""
+        with pytest.raises(FileNotFoundError):
+            document_path_to_markdown(os.path.join(self.FIXTURES_DIR, "missing.pdf"))
+
+    def test_document_path_to_markdown_without_extension(self, tmp_path):
+        """A file with no extension raises ValueError."""
+        extensionlessFile = tmp_path / "README"
+        extensionlessFile.write_bytes(b"some content")
+
+        with pytest.raises(ValueError):
+            document_path_to_markdown(str(extensionlessFile))
