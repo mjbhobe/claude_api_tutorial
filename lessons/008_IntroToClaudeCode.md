@@ -2,11 +2,12 @@
 
 ## Introduction
 
-Claude Code is a **terminal-based coding assistant that can help you with various programming tasks**. Think of it as having Claude available right in your command line, ready to:
+Claude Code is a **terminal-based agentic coding assistant that can help you with various programming tasks**. Think of it as having Claude available right in your command line. Claude Code can:
 
-* Edit files and fix bugs
-* Answer coding questions
-* Help with development workflows
+* **Read and understand your codebase**. You can ask Claude Code to explain a feature or trace a bug throughout your code.
+* **Edit files across your project**. Claude Code can refactor a function and update every file that references it.
+* **Run terminal commands**. It can execute your build script, run your tests, install packages, and use the output to decide what to do next.
+* **Search the web**. If it needs documentation or the latest API references, it can look that up for you.
 
 ### Computer Use
 
@@ -31,7 +32,7 @@ By examining these real-world implementations, we'll gain insights into what mak
 
 ## Claude Code Setup
 
-Claude Code is a terminal-based coding assistant that runs directly in your command line. Think of it as having Claude available right in your terminal to help with any coding task you're working on.
+Claude Code is a terminal-based coding assistant that runs directly in your command line (or as a plugin inside your favourite IDE like VSCode or PyCharm or CLion). Think of it as having Claude available right in your terminal to help with any coding task you're working on.
 
 ### What Claude Code Can Do
 
@@ -76,13 +77,11 @@ Once you're set up, you'll have Claude available directly in your terminal, read
 
 Claude Code isn't just a tool for writing code - it's designed to work alongside you throughout every phase of a software project. Think of it as another engineer on your team who can handle everything from initial setup to deployment and support.
 
-> **NOTE** 
+> **NOTE**
 >
 > Claude Code works on all contents in a folder, so it's actions are limited to contents of that folder. To follow along, ensure that you start claude in a terminal from the `../notebooks/app_starter` folder.
 
 ![Claude Code Start](images/claude_code_start.png)
-
-Once you see the above screen, you should ask Claude Code to 
 
 ### The `/init` Command
 
@@ -102,10 +101,11 @@ And if you scan the root folder of your project, you should see a new `CLAUDE.md
 
 You can have multiple `CLAUDE.md` files for different scopes:
 
-* Project - Shared between all engineers working on the project
-* Local - Your personal notes that aren't checked into git
-* User - Used across all your projects
-When running /init, you can add special directions for areas you want Claude to focus on. The generated file will include build commands, coding guidelines, and project-specific patterns that Claude should follow.
+* **Project** - Shared between all engineers working on the project (located in the project's `.claude` folder)
+* **Local** - Your personal notes that aren't checked into git
+* **User** - Used across all your projects
+
+When running `/init`, you can add special directions for areas you want Claude to focus on. The generated file will include build commands, coding guidelines, and project-specific patterns that Claude should follow.
 
 You can also quickly add notes to your CLAUDE.md file using the # command. For example, typing `# Always use descriptive variable names that clearly indicate what the variable holds (e.g. cashBalance instead of cb). Use camelCase for variables, starting with lowercase letter.` will prompt you to add this guideline to your project, local, or user memory.
 
@@ -240,3 +240,10 @@ The real power comes from combining multiple MCP servers that match your specifi
 * Custom servers for your internal tools and APIs
 
 This creates a development environment where Claude can seamlessly work with all the tools and services you already use, making it a much more powerful coding assistant tailored to your specific workflow.
+
+## Daily Workflow
+
+
+
+## Customizing Claude Code
+
