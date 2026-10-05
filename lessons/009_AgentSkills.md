@@ -251,3 +251,242 @@ This is particularly useful for:
 * Data transformations that need to be consistent
 * Operations that are more reliable as tested code than generated code
 
+## Skills vs Other Claude Code Features
+
+Claude Code offers several customization options, and choosing the wrong one can lead to unnecessary complexity. This video breaks down when to use skills versus `CLAUDE.md`, `subagents`, `hooks`, and `MCP Servers`. You'll learn the key differences between each option and how they complement each other in a typical development setup.
+
+### Key takeaways
+
+* `CLAUDE.md` loads into every conversation and is best for always-on project standards. Skills load on demand and are best for task-specific expertise
+* `Subagents` run in isolated execution contexts — use them for delegated work. Skills add knowledge to your current conversation
+* `Hooks` are event-driven (fire on file saves, tool calls). Skills are request-driven (activate based on what you're asking)
+* `MCP servers` provide external tools and integrations — a different category entirely from skills.
+* Each feature handles its own specialty — combine them rather than forcing everything into one approach
+
+Claude Code offers several customization options: Skills, `CLAUDE.md`, subagents, hooks, and MCP servers. They solve different problems, and knowing when to use each prevents you from building the wrong thing. Let's break them down.
+
+### `CLAUDE.md` vs Skills
+
+`CLAUDE.md` loads into every conversation, always. If you want Claude to use TypeScript strict mode in your project, put it in your `CLAUDE.md` file.
+
+Skills load on demand. When Claude matches a request to a skill, that skill's instructions join the conversation. Your PR review checklist doesn't need to be in context when you're writing new code — it activates when you ask for a review.
+
+![Claude.md vs Skills](images/claude_md_vs_skills.png)
+
+Use `CLAUDE.md` for:
+
+* Project-wide standards that always apply
+* Constraints like "never modify the database schema"
+* Framework preferences and coding style
+
+Use Skills for:
+
+* Task-specific expertise
+* Knowledge that's only relevant sometimes
+* Detailed procedures that would clutter every conversation
+
+### Skills vs Subagents
+
+Skills add knowledge to your current conversation. When a skill activates, its instructions join the existing context.
+
+Subagents run in a separate context. They receive a task, work on it independently, and return results. They're isolated from the main conversation.
+
+Use Subagents when:
+
+* You want to delegate a task to a separate execution context
+* You need different tool access than the main conversation
+* You want isolation between delegated work and your main context
+
+Use Skills when:
+
+* You want to enhance Claude's knowledge for the current task
+* The expertise applies throughout a conversation
+
+### Skills vs Hooks
+
+Hooks fire on events. A hook might run a linter every time Claude saves a file, or validate input before certain tool calls. They're event-driven.
+
+Skills are request-driven. They activate based on what you're asking.
+
+Use Hooks for:
+
+* Operations that should run on every file save
+* Validation before specific tool calls
+* Automated side effects of Claude's actions
+
+Use Skills for:
+
+* Knowledge that informs how Claude handles requests
+* Guidelines that affect Claude's reasoning
+
+### Putting It All Together
+
+A typical setup might include:
+
+* `CLAUDE.md` — always-on project standards
+* `Skills` — task-specific expertise that loads on demand
+* `Hooks` — automated operations triggered by events
+* `Subagents` — isolated execution contexts for delegated work
+* `MCP servers` — external tools and integrations
+
+Each handles its own specialty. Don't force everything into skills when another option fits better — and you can use multiple at a time. Skills provide automatic task-specific expertise, CLAUDE.md is for always-on instructions, subagents run in isolated contexts, hooks fire on events, and MCP provides external tools.
+
+Use skills when you have knowledge that Claude should apply automatically when the topic is relevant, and combine them with other features for comprehensive customization.
+
+## Sharing Skills
+
+Skills become much more valuable when they're shared across a team or organization. This section covers the three main distribution methods — repository commits, plugins, and enterprise managed settings — and explains how to configure custom subagents to use skills. You'll learn which approach fits which scenario and how to handle an important gotcha: subagents don't inherit skills automatically.
+
+### Key takeaways
+
+* **Project skills in** `.claude/skills` are shared automatically through Git — anyone who clones the repo gets them
+* **Plugins** let you distribute skills across repositories via marketplaces for broader community use
+* **Enterprise managed settings** deploy skills organization-wide with the highest priority, ideal for mandatory standards and compliance
+* **Subagents don't automatically see your skills** — you must explicitly list skills in a custom agent's front-matter `skills` field
+* Built-in agents (Explorer, Plan, Verify) can't access skills at all — only custom subagents defined in `.claude/agents` can
+
+Skills become much more valuable when they're shared. A PR review skill that only you use is helpful, but that same skill shared across your entire team standardizes code review and creates a consistent experience across your organization. Let's look at the different ways you can distribute skills.
+
+### Committing Skills to Your Repository
+
+The simplest sharing method is committing skills directly to your repository. Place them in `.claude/skills`, and anyone who clones the repo gets those skills automatically — no extra installation needed.
+
+When you push updates, everyone gets them on the next pull. This approach works well for:
+
+* Team coding standards
+* Project-specific workflows
+* Skills that reference your codebase structure
+
+The `.claude` directory contains your agents, hooks, skills, and settings — all version-controlled and shared with the team through normal Git workflows.
+
+### Distributing Skills Through Plugins
+
+Plugins are a way to extend Claude Code with custom functionality designed to be shared across teams and projects. In your plugin project, create a skills directory that follows a similar file structure to the `.claude` directory — each skill gets its own folder with a `SKILL.md` file inside.
+
+After you distribute your plugin to a marketplace, other users can discover and install it into Claude Code for themselves.
+
+![Claude Plugins](images/claude_plugins.png)
+
+This approach is best when your skills aren't too project-specific and can be useful to community members beyond your immediate team.
+
+### Enterprise Deployment Through Managed Settings
+
+Administrators can deploy skills organization-wide through managed settings. Enterprise skills take the highest priority — they override personal, project, and plugin skills with the same name.
+
+![Enterprise Wide Deployment](images/claude_skills_enterprise.png)
+
+The managed settings file supports features like `strictKnownMarketplaces` to control where plugins can be installed from:
+
+```json
+"strictKnownMarketplaces": [
+  {
+    "source": "github",
+    "repo": "acme-corp/approved-plugins"
+  },
+  {
+    "source": "npm",
+    "package": "@acme-corp/compliance-plugins"
+  }
+]
+```
+
+This is the right choice for mandatory standards, security requirements, compliance workflows, and coding practices that must be consistent across the organization. The keyword here is "must."
+
+### Skills and Subagents
+
+Here's something that surprises people: subagents don't automatically see your skills. When you delegate a task to a subagent, it starts with a fresh, clean context.
+
+There are important distinctions to understand:
+
+* **Built-in agents** (like Explorer, Plan, and Verify) can't access skills at all
+* **Custom subagents** you define _can_ use skills, but only when you explicitly list them
+* Skills are loaded when the subagent starts, not on demand like in the main conversation
+
+To create a custom subagent with skills, add an agent markdown file in `.claude/agents`. You can use the `/agents` command in Claude Code to create one interactively:
+
+![Create custom sub-agents with Skills](images/create_custom_subagent_with_skills.png)
+
+The generated agent file includes a skills field that lists which skills to load. Here's what the front-matter looks like:
+
+```yaml
+---
+name: frontend-security-accessibility-reviewer
+description: "Use this agent when you need to review frontend code for accessibility..."
+tools: Bash, Glob, Grep, Read, WebFetch, WebSearch, Skill...
+model: sonnet
+color: blue
+skills: accessibility-audit, performance-check
+---
+```
+
+When you delegate to this subagent, it has both skills loaded and applies them to every review. First make sure the skills exist in your `.claude/skills` directory, then either create a new subagent or add the skills field to an existing agent's markdown file.
+
+This pattern works really well when:
+
+* You want isolated task delegation with specific expertise
+* Different subagents need different skills (frontend reviewer vs. backend reviewer)
+* You want to enforce standards in delegated work without relying on prompts
+
+## Troubleshooting Skills
+
+When skills don't work as expected, the problem usually falls into a few predictable categories. This video walks through each one — from skills that don't trigger to priority conflicts to runtime failures — and gives you a systematic troubleshooting approach. You'll also learn about the skills validator tool and how to use claude --debug to diagnose loading issues.
+
+Key takeaways
+Start with the skills validator tool — it catches structural problems before you spend time debugging other things
+If a skill doesn't trigger, the cause is almost always the description — add trigger phrases that match how you actually phrase requests
+If a skill doesn't load, check that SKILL.md is inside a named directory (not at the skills root) and the file name is exactly SKILL.md
+If the wrong skill gets used, your descriptions are too similar — make them more distinct
+For runtime errors, check dependencies, file permissions (chmod +x), and path separators (use forward slashes everywhere)
+When skills don't work, the problem usually falls into one of a few categories: the skill doesn't trigger, doesn't load, has conflicts, or fails at runtime. The good news is that most fixes are pretty straightforward.
+
+Use the Skills Validator
+The first thing to try is the agent skills verifier command. Installation steps vary by operating system, but using uv is the easiest way to get it set up quickly.
+
+Once installed, either navigate to your skill directory or run the command from anywhere. The validator will catch structural problems before you spend time debugging other things.
+
+Skill Doesn't Trigger
+Your skill exists and passes validation, but Claude isn't using it when you expect. The cause is almost always the description.
+
+Claude uses semantic matching, so your request needs to overlap with the description's meaning. If there's not enough overlap, no match. Here's what to do:
+
+Check your description against how you're actually phrasing requests
+Add trigger phrases users would actually say
+Test with variations like "help me profile this," "why is this slow?", "make this faster"
+If any variation fails to trigger, add those keywords to your description
+Skill Doesn't Load
+If your skill doesn't appear when you ask Claude "what skills are available," check these structural requirements:
+
+The SKILL.md file must be inside a named directory, not at the skills root
+The file name must be exactly SKILL.md — all caps on "SKILL", lowercase "md"
+Run claude --debug to see loading errors. Look for messages mentioning your skill name. Sometimes this alone will point you straight to the problem.
+
+Wrong Skill Gets Used
+If Claude uses the wrong skill or seems confused between skills, your descriptions are probably too similar. Make them distinct. Being as specific as possible doesn't just help Claude decide when to use your skill — it also prevents conflicts with other similar-sounding skills.
+
+Skill Priority Conflicts
+If your personal skill is being ignored, an enterprise or higher-priority skill might have the same name.
+
+
+
+For example, if there's an enterprise "code-review" skill and you also have a personal "code-review" skill, the enterprise one wins every time. Your options:
+
+Rename your skill to something more distinct (this is usually the easier path)
+Talk to your admin about the enterprise skill
+Plugin Skills Not Appearing
+Installed a plugin but can't see its skills? Clear the cache, restart Claude Code, and reinstall.
+
+If skills still don't appear after that, the plugin structure might be wrong. This is when the validator tool really earns its keep.
+
+Runtime Errors
+The skill loads but fails during execution. A few common causes:
+
+Missing dependencies: If your skill uses external packages, they must be installed. Add dependency info to your skill description so Claude knows what's needed.
+Permission issues: Scripts need execute permission. Run chmod +x on any scripts your skill references.
+Path separators: Use forward slashes everywhere, even on Windows.
+Quick Troubleshooting Checklist
+Not triggering? Improve your description and add trigger phrases.
+Not loading? Check your path, file name, and YAML syntax.
+Wrong skill used? Make descriptions more distinct from each other.
+Being shadowed? Check the priority hierarchy and rename if needed.
+Plugin skills missing? Clear cache and reinstall.
+Runtime failure? Check dependencies, permissions, and paths.
