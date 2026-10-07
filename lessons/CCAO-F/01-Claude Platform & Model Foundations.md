@@ -11,7 +11,7 @@ This module builds the framework for the four decisions that sit at the front of
 1. Which entry point to use
 2. Which capability features to activate
 3. Which model to select, and
-4. How to manage context across a session. 
+4. How to manage context across a session.
 
 These four decisions determine whether sessions build on prior work or require constant re-setup.
 
