@@ -151,7 +151,8 @@ Contract review is a common first-win workflow for business teams, so it is wort
 | Compute financial exposure of a penalty clause | AI-appropriate (code execution) | Numeric; must be computed, not estimated
 | Sign and send | Human-retained | Irreversible, external, legally binding |
 
-Onboarding documents
+**Onboarding documents**
+
 | Workflow step | Delegation | Why |
 | :-- | :-- | :-- |
 | Pull new-hire details from the HRIS export | AI-appropriate (code execution) | Mechanical, reversible, must be exact |
