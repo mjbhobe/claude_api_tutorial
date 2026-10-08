@@ -92,3 +92,70 @@
   color: #868a91;
   margin: 14px 0 4px 0;
 }
+
+
+/* Base container and layout elements */
+.callout {
+  padding: 4px 0 4px 16px;
+  margin: 16px 0;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+
+.callout-header {
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.callout-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8b949e;
+  margin-bottom: 12px;
+}
+
+.callout-body {
+  line-height: 1.6;
+}
+
+/* Color theme variants (GitHub Alert equivalents) */
+.BlueBar {
+  border-left-color: #1f6feb; /* Mimics Note */
+}
+.BlueBar .callout-header {
+  color: #1f6feb;
+}
+
+.GreenBar {
+  border-left-color: #238636; /* Mimics Tip */
+}
+.GreenBar .callout-header {
+  color: #238636;
+}
+
+.PurpleBar {
+  border-left-color: #8957e5; /* Mimics Important */
+}
+.PurpleBar .callout-header {
+  color: #8957e5;
+}
+
+.YellowBar {
+  border-left-color: #d29922; /* Mimics Warning */
+}
+.YellowBar .callout-header {
+  color: #d29922;
+}
+
+.RedBar {
+  border-left-color: #f85149; /* Mimics Caution */
+}
+.RedBar .callout-header {
+  color: #f85149;
+}

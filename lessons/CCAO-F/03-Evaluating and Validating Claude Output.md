@@ -236,17 +236,73 @@ Three passes turn a draft into something you would put your name on:
 
 One analysis often needs to become several deliverables. An executive summary leads with the decision and the impact. A working-team version keeps the detail and the method. An external communication controls what is disclosed and how it is framed. The underlying facts hold steady; the selection, depth, and tone change with who is reading.
 
-Comparing outputs before you edit
+### Comparing outputs before you edit
+
 When quality matters, generate more than one draft (across runs or across models) and choose the strongest base to edit from, rather than committing to the first response. Comparing candidates is cheaper than rescuing a weak draft, and it invites framing you might not have prompted for.
 
-One analysis, two audiences: a transformation
-Raw output (excerpt)
-"The analysis indicates that processing time increased by approximately 18 percent in Q3, which may be attributable to a combination of higher volume and the onboarding of three new staff members who were still onboarding during the period, and it is recommended that the team consider whether additional process documentation might help mitigate similar effects in future onboarding cycles."
+### One analysis, two audiences: a transformation
 
-Executive version
-"Q3 processing time rose 18 percent, driven by volume plus onboarding three new hires. Recommend standardized onboarding docs to limit the effect next time." Leads with the number and the decision; one sentence.
+> [!Note]
+> <small>RAW OUTPUT (EXCERPT)</small>
+>
+> "The analysis indicates that processing time increased by approximately 18 percent in Q3, which may be attributable to a combination of higher volume and the onboarding of three new staff members who were still onboarding during the period, and it is recommended that the team consider whether additional process documentation might help mitigate similar effects in future onboarding cycles."
 
-Working-team version
-"Processing time was up ~18% in Q3. Two drivers: higher volume and three new staff still onboarding. Action: draft onboarding documentation so the next cohort ramps faster (owner and timeline to confirm in standup)." Keeps the method and adds the operational next step.
+> [!Tip]
+> <small>EXECUTIVE VERSION</small>
+>
+>"Q3 processing time rose 18 percent, driven by volume plus onboarding three new hires. Recommend standardized onboarding docs to limit the effect next time." 
+>
+> Leads with the number and the decision; one sentence.
+
+> [!Tip]
+> <small>WORKING-TEAM VERSION</small>
+>
+> "Processing time was up ~18% in Q3. Two drivers: higher volume and three new staff still onboarding. Action: draft onboarding documentation so the next cohort ramps faster (owner and timeline to confirm in standup)."
+>
+> Keeps the method and adds the operational next step.
 
 Same facts, same 18 percent. The executive cut strips method and leads with impact; the working cut keeps detail and assigns action. Neither is a raw draft, which would not serve either audience.
+
+## Choosing Output Formats: Inline, Artifacts, Structured, Code-Executed
+
+The output format is a reliability decision, not just a presentation choice. The right format depends on what the result is intended for and, above all, on how much the numbers have to be trusted.
+
+### Format by purpose
+
+* **Inline.** For conversational responses you will act on within the chat. Quick, contextual, not meant to be a standalone artifact.
+* **Artifacts.** _For documents and code:_ a separate, editable block you will refine and reuse. The right home for a deliverable rather than a reply.
+* **Structured formats.** _For data:_ tables and defined schemas that downstream tools or readers can consume directly.
+
+### Code execution as the verified-output path
+
+When numbers must be right, have Claude compute them rather than write them. Prose generation produces a plausible-looking figure; code execution runs the calculation and returns a computed, checkable result, along with charts and processed files. Determinism attaches to the executed computation; Claude writes the code, so the logic itself can still contain a bug. The guarantee is that you can read, verify, and re-run the calculation, but the code is not automatically correct. The same data task done two ways shows the difference: a number generated in prose is a guess in the shape of an answer, while a number from code execution is a computed result you can trace and check.
+
+### Prose versus code-executed: the same task
+
+**Task:** from an uploaded sales spreadsheet, report total Q3 revenue and the three top accounts.
+
+* **_Prose path_**: "Total Q3 revenue was about $4.7 million, with the largest accounts being Northwind, Contoso, and Globex." Fluent, fast, _and unverifiable_. The total is the model's best guess at summing a column it cannot actually add reliably, and a wrong total here propagates into every downstream slide.
+
+* **_Code-executed path_**: Claude writes and runs code over the actual file, returning $4,712,380 as a computed sum, the three top accounts ranked by their real totals, and a bar chart. The number is traceable to the rows that produced it. When the figure feeds a decision, this is the only path that earns trust.
+
+The prose answer is not lazy; it is a different kind of output. For a low-stakes gut-check it may be fine. For anything that gets reported, the reliability requirement points to code execution.
+
+### Curate the inputs to shape the output
+
+Organized inputs produce organized outputs. Supplying clean, well-labeled source material and stating the structure you want back is what lets Claude return something structured rather than something you have to restructure. The selection rule is simple: pick the output modality by the reliability the task requires. Curating inputs means removing the wrong material, in addition to adding the right material.
+
+Three techniques do most of the work: _de-duplicate your sources_ so Claude is not reconciling three near-identical copies of the same document; _label and structure what you supply_ so each input's role is explicit ("this is the approved policy; these are the draft responses"); and _prune material that is not relevant to the question_, because noise in the input becomes noise in the output. Clean, well-labeled, minimal inputs produce a cleaner result than a large undifferentiated pile.
+
+## Sample Exercise
+
+Triage is the daily muscle of responsible AI use. This exercise applies the Discernment protocol and the Diligence thresholds to a set of outputs, the way you would in real work.
+
+Four Claude outputs follow. Classify each as ready to use, needs revision, or needs human override, and state the reason. Then compare against the model answers.
+
+### Outputs to triage
+
+![Output #1](images/triage-1.png)
+![Output #2](images/triage-2.png)
+![Output #3](images/triage-3.png)
+![Output #4](images/triage-4.png)
+
