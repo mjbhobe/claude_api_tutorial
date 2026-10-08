@@ -1,6 +1,6 @@
 # Prompting and Task Execution
 
-The same request, phrased two ways, produces two different levels of quality.
+<span style="font-size: 1.25em;">_The same request, phrased two ways, produces two different levels of quality._</span>
 
 Ask Claude to `"write something about our Q3 results"` and you get a generic paragraph. Specify the audience, the three results that matter, the format, and the length, and you get a draft you can almost send. The model did not get smarter between those two requests. The prompt did.
 
@@ -8,7 +8,9 @@ This module treats prompting as a communication discipline with learnable struct
 
 ## Anatomy of an Effective Prompt
 
-**A strong prompt is built from components**, and most weak prompts are missing one or more of them. Naming the components turns prompting from guesswork into a checklist you can run before sending any non-trivial request.
+<span style="font-size: 1.25em;">_A strong prompt is built from components, and most weak prompts are missing one or more of them._</span> 
+
+Naming the components turns prompting from guesswork into a checklist you can run before sending any non-trivial request.
 
 ### The Component stack
 
@@ -64,7 +66,7 @@ Same model, same data. The second prompt produces a draft the analyst can refine
 
 ## Task Decomposition for Complex Requests
 
-**Some requests are too large to specify as a single instruction**.
+<span style="font-size: 1.25em;">_Some requests are too large to specify as a single instruction**._</span>
 
 When a task has several distinct stages, packing it into one prompt produces shallow work on every stage. Decomposition is how you break a complex request into a sequence Claude can execute well.
 
@@ -72,9 +74,10 @@ When a task has several distinct stages, packing it into one prompt produces sha
 
 ### The single-prompt version that underperforms
 
-```
-"Evaluate these three vendors and tell me which to pick."
-```
+> [!Tip]
+> <small>SINGLE PROMPT</small>
+>
+> "Evaluate these three vendors and tell me which to pick."
 
 Claude has to invent criteria, apply them, weigh trade-offs, and recommend, all in one pass. It will do all four shallowly and you will not see the reasoning behind the recommendation.
 
@@ -89,7 +92,7 @@ Claude has to invent criteria, apply them, weigh trade-offs, and recommend, all 
 
 Each step produces a checkable intermediate result. If the criteria in Step 1 are wrong, you catch it before scoring, not after the recommendation. Decomposition also makes the work auditable, which matters when someone asks how the recommendation was reached.
 
-### One conversation or several
+#### One conversation or several
 
 Keep sequential steps that build on each other in one conversation, so each step sees the prior results. Move to a separate conversation when a step is genuinely independent, or when the conversation has grown long enough that early context is degrading. That judgment connects directly to the context-management skills from Module 1.
 
@@ -97,13 +100,12 @@ Keep sequential steps that build on each other in one conversation, so each step
 
 Three deliverables, one foundation: sequence the shared extraction first.
 
-```markdown
-##Scenario
-
-A communications manager needs to turn a dense 20-page policy change into an (1) internal announcement, (2) a FAQ for staff, and (3) a short briefing for executives. 
-
-Before reading on, decompose this into an ordered sequence of steps you would run with Claude.
-```
+> [!Note]
+> <small>SCENARIO</small>
+>
+> A communications manager needs to turn a dense 20-page policy change into an (1) internal announcement, (2) a FAQ for staff, and (3) a short briefing for executives. 
+>
+> Before reading on, decompose this into an ordered sequence of steps you would run with Claude.
 
 #### Model decomposition
 
