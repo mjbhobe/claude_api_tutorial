@@ -161,7 +161,6 @@ Contract review is a common first-win workflow for business teams, so it is wort
 | Confirm compensation figures match the approved req | Human-retained | High stakes, accountability does not delegate |
 | Send the signed offer | Human-retained | Irreversible, legally binding |
 
-
 Note that the AI does real work here, including the redline draft, not just a summary. The human owns the decisions and the irreversible steps. That split is the redesign.
 
 ### Recognizing over-delegation
@@ -180,27 +179,60 @@ Integrating Claude into a team workflow means describing it to people who did no
 
 Credibility comes from accurate claims, which means communicating the limits as clearly as the value. Overstating capability is how teams lose stakeholder trust on the first visible miss.
 
-Describe capability accurately
-State what Claude can reliably do for the use case and what it cannot, without inflation or false modesty. "Claude drafts the first pass redline, which a lawyer reviews" is accurate and credible. "Claude handles contract review" overstates and invites the question your first error will answer badly.
+### Describe capability accurately
+
+State what Claude can reliably do for the use case and what it cannot, without inflation or false modesty. `"Claude drafts the first pass redline, which a lawyer reviews"` is accurate and credible. `"Claude handles contract review"` overstates and invites the question your first error will answer badly.
 
 The same workflow, different audiences
 Consider the contract-review workflow, interpreted from varied perspectives:
 
-Legal lead
-Practice executive
-Client risk function
-High literacy. "Claude extracts clauses, flags playbook departures, and drafts the redline. It does not approve changes, that gate stays with you. Known failure mode: it can miss obligations implied indirectly, so the playbook-departure flags are a prompt for your read, not a substitute."
+<link rel="stylesheet" href="./tabs.css">
+
+<div class="jb-tabs-container">
+<input type="radio" name="jb-tab-group" id="tab1" checked>
+<input type="radio" name="jb-tab-group" id="tab2">
+<input type="radio" name="jb-tab-group" id="tab3">
+
+<div class="jb-tabs-header">
+<label class="jb-tab-label" for="tab1">Legal Lead</label>
+<label class="jb-tab-label" for="tab2">Practice Executive</label>
+<label class="jb-tab-label" for="tab3">Client Risk Function</label>
+</div>
+
+<div class="jb-tab-content">
+
+<div class="jb-tab-panel" id="content1">
+<p><strong>High Literacy.</strong> "Claude extracts clauses, flags playbook departures, and drafts the redline. It does not approve changes, that gate stays with you. Known failure mode: it can miss obligations implied indirectly, so the playbook-departure flags are a prompt for your read, not a substitute."</p>
+</div>
+
+<div class="jb-tab-panel" id="content2">
+<p><strong>Outcome Focused.</strong> "Review time is down about half at the same approval standard. Every change is still approved by a lawyer before it leaves the building."</p>
+</div>
+
+<div class="jb-tab-panel" id="content3">
+<p><strong>Assurance Focused.</strong> "AI assists drafting; qualified human reviews and approves every term. No contract is sent without human sign-off."</p>
+</div>
+
+</div>
+</div>
 
 This is the same workflow and the same human gate. What changes is the detail each audience needs to trust it at.
 
-Calibrate to the audience
+### Calibrate to the audience
+
 Match the message to the audience's AI literacy. A technical stakeholder wants the feature detail and the failure modes; an executive wants the outcome, the oversight in place, and the risk posture. The expectation you set should match the capability boundary, so no one is surprised later. This is the Description competency from Module 2 applied outward: the same precise specification of what the tool can and cannot do, now directed at stakeholders rather than at Claude.
 
-Document the human oversight
-Name the review gates that stay in place. "Every output destined for a client passes human review" is the control that makes the workflow defensible. Stakeholders trust an AI workflow more, not less, when the human checkpoints are explicit.
+### Document the human oversight
 
-Good and bad messaging, side by side
-Overstated	Accurate
-"Our new AI system reviews contracts automatically." Sets an expectation the workflow does not meet and hides the human gate.	"Claude drafts the redline and flags playbook departures; our legal lead reviews and approves every change before anything is sent. The team's review time is down about half, with the same approval standard." Value and limits in one breath.
-Phrases that quietly overstate
-"Fully automated" is almost never true, and the first visible error exposes it. "Claude handles X" collapses the human gate out of the sentence. "It's basically as good as a person at Y" sets a standard that the tool will eventually miss publicly. Each replaces a defensible, bounded claim with an inflated one. The fix is the same every time: state what the tool does, then identify the human checkpoint.
+Name the review gates that stay in place. `"Every output destined for a client passes human review"` is the control that makes the workflow defensible. Stakeholders trust an AI workflow more, not less, when the human checkpoints are explicit.
+
+### Good and bad messaging, side by side
+
+| Overstated | Accurate |
+| :-- | :-- |
+| <small>`"Our new AI system reviews contracts automatically."`</small><br/><br/>Sets an expectation the workflow does not meet and hides the human gate. | <small>`"Claude drafts the redline and flags playbook departures; our legal lead reviews and approves every change before anything is sent. The team's review time is down about half, with the same approval standard."`</small><br/><br/>Value and limits in one breath. |
+
+> [!Warning]
+> <small>PHRASES THAT QUIETLY OVERSTATE</small>
+>
+> <small>`"Fully automated"`</small> is almost never true, and the first visible error exposes it. <small>`"Claude handles X"`</small> collapses the human gate out of the sentence. <small>`"It's basically as good as a person at Y"`</small> sets a standard that the tool will eventually miss publicly. Each replaces a defensible, bounded claim with an inflated one. The fix is the same every time: state what the tool does, then identify the human checkpoint.
