@@ -60,6 +60,7 @@ Articulating why a use case fails the test, and what human role must be retained
 Because a Skill runs procedures and can touch data and tools available in the session, one from an unknown source could mishandle data or take unintended actions. "Skills are a black box" is a common organizational worry, and the answer is not blind trust or blanket bans; it is a repeatable trust evaluation.
 
 Trust evaluation before enabling:
+
 1. **Source:** Who published this skill? Anthropic-provided and internally-approved Skills ate the lower-risk starting point.; an unknown third-party Skill demands more scrutiny.
 2. **Reach:** Skills do not request permission. A Skill inheriys whatever access the session it runs in already has. Ask instead: what could this Skill reach in the session where it will run, and is that exposure proportional to the task?
     Audit the bundle's contents (instructions, dependencies, bundles files) before enabling; a formatting skill whose instructions roam far beyond formatting is a red flag.
