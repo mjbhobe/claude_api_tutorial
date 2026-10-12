@@ -1,6 +1,6 @@
 from mcp.server.fastmcp import FastMCP
-from tools.math import add
-from tools.document import document_path_to_markdown
+from src.notebooks.app_starter.tools.math import add
+from src.notebooks.app_starter.tools.document import document_path_to_markdown
 
 mcp = FastMCP("docs")
 

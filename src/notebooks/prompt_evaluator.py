@@ -5,12 +5,12 @@ import re
 from textwrap import dedent
 from statistics import mean
 
-from my_chat_utils import (
+from src.notebooks.my_chat_utils import (
     add_user_message,
     add_assistant_message,
     chat,
 )
-from report_utils import generate_prompt_evaluation_report
+from src.notebooks.report_utils import generate_prompt_evaluation_report
 
 
 class PromptEvaluator:

@@ -4,11 +4,11 @@ import os
 from dotenv import load_dotenv
 from contextlib import AsyncExitStack
 
-from mcp_client import MCPClient
-from core.claude import Claude
+from src.notebooks.mcp_client import MCPClient
+from src.notebooks.core.claude import Claude
 
-from core.cli_chat import CliChat
-from core.cli import CliApp
+from src.notebooks.core.cli_chat import CliChat
+from src.notebooks.core.cli import CliApp
 
 load_dotenv(override=True)
 

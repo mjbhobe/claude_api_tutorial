@@ -1,6 +1,6 @@
-from core.claude import Claude
-from mcp_client import MCPClient
-from core.tools import ToolManager
+from src.notebooks.core.claude import Claude
+from src.notebooks.mcp_client import MCPClient
+from src.notebooks.core.tools import ToolManager
 from anthropic.types import MessageParam
 
 
@@ -35,13 +35,9 @@ class Chat:
                     self.clients, response
                 )
 
-                self.claude_service.add_user_message(
-                    self.messages, tool_result_parts
-                )
+                self.claude_service.add_user_message(self.messages, tool_result_parts)
             else:
-                final_text_response = self.claude_service.text_from_message(
-                    response
-                )
+                final_text_response = self.claude_service.text_from_message(response)
                 break
 
         return final_text_response

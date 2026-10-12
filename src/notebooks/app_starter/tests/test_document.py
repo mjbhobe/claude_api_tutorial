@@ -1,6 +1,9 @@
 import os
 import pytest
-from tools.document import binary_document_to_markdown, document_path_to_markdown
+from src.notebooks.app_starter.tools.document import (
+    binary_document_to_markdown,
+    document_path_to_markdown,
+)
 
 
 class TestBinaryDocumentToMarkdown:
@@ -11,12 +14,12 @@ class TestBinaryDocumentToMarkdown:
 
     def test_fixture_files_exist(self):
         """Verify test fixtures exist."""
-        assert os.path.exists(self.DOCX_FIXTURE), (
-            f"DOCX fixture not found at {self.DOCX_FIXTURE}"
-        )
-        assert os.path.exists(self.PDF_FIXTURE), (
-            f"PDF fixture not found at {self.PDF_FIXTURE}"
-        )
+        assert os.path.exists(
+            self.DOCX_FIXTURE
+        ), f"DOCX fixture not found at {self.DOCX_FIXTURE}"
+        assert os.path.exists(
+            self.PDF_FIXTURE
+        ), f"PDF fixture not found at {self.PDF_FIXTURE}"
 
     def test_binary_document_to_markdown_with_docx(self):
         """Test converting a DOCX document to markdown."""
