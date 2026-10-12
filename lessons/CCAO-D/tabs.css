@@ -1,0 +1,161 @@
+/* ==========================================================
+   JetBrains New UI Dark - Tabbed Layout Component
+   ========================================================== */
+
+.jb-tabs-container {
+  border: 1px solid #393b40;
+  border-radius: 8px;
+  background-color: #2b2d30;
+  margin: 18px 0;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Tab Bar Header */
+.jb-tabs-header {
+  display: flex;
+  background-color: #1e1f22;
+  border-bottom: 1px solid #393b40;
+  padding: 4px 8px 0 8px;
+  gap: 4px;
+}
+
+/* Hide actual radio inputs */
+.jb-tabs-container input[type="radio"] {
+  display: none;
+}
+
+/* Default / Inactive Tab Pill */
+.jb-tab-label {
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #868a91;
+  border-radius: 6px 6px 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  user-select: none;
+  transition: color 0.12s ease-in-out, background-color 0.12s ease-in-out;
+}
+
+.jb-tab-label:hover {
+  color: #dfe1e5;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Active Tab Pill (JetBrains Blue Highlight) */
+#tab1:checked ~ .jb-tabs-header label[for="tab1"],
+#tab2:checked ~ .jb-tabs-header label[for="tab2"],
+#tab3:checked ~ .jb-tabs-header label[for="tab3"] {
+  background-color: #2b2d30;
+  color: #dfe1e5;
+  font-weight: 600;
+  border-color: #393b40;
+  border-top: 2px solid #3574f0; /* JetBrains Accent Blue */
+  margin-bottom: -1px;           /* Overlaps bottom container border */
+}
+
+/* Tab Body Panels */
+.jb-tab-panel {
+  display: none;
+  padding: 16px 20px;
+  color: #bcbec4;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.jb-tab-panel strong {
+  color: #dfe1e5;
+}
+
+.jb-tab-panel p {
+  margin: 0 0 12px 0;
+}
+
+.jb-tab-panel p:last-child {
+  margin-bottom: 0;
+}
+
+/* Content Toggling */
+#tab1:checked ~ .jb-tab-content #content1,
+#tab2:checked ~ .jb-tab-content #content2,
+#tab3:checked ~ .jb-tab-content #content3 {
+  display: block;
+}
+
+.jb-tab-subhead {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #868a91;
+  margin: 14px 0 4px 0;
+}
+
+
+/* Base container and layout elements */
+.callout {
+  padding: 4px 0 4px 16px;
+  margin: 16px 0;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+
+.callout-header {
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.callout-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8b949e;
+  margin-bottom: 12px;
+}
+
+.callout-body {
+  line-height: 1.6;
+}
+
+/* Color theme variants (GitHub Alert equivalents) */
+.BlueBar {
+  border-left-color: #1f6feb; /* Mimics Note */
+}
+.BlueBar .callout-header {
+  color: #1f6feb;
+}
+
+.GreenBar {
+  border-left-color: #238636; /* Mimics Tip */
+}
+.GreenBar .callout-header {
+  color: #238636;
+}
+
+.PurpleBar {
+  border-left-color: #8957e5; /* Mimics Important */
+}
+.PurpleBar .callout-header {
+  color: #8957e5;
+}
+
+.YellowBar {
+  border-left-color: #d29922; /* Mimics Warning */
+}
+.YellowBar .callout-header {
+  color: #d29922;
+}
+
+.RedBar {
+  border-left-color: #f85149; /* Mimics Caution */
+}
+.RedBar .callout-header {
+  color: #f85149;
+}
