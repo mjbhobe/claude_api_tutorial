@@ -45,17 +45,17 @@
   background-color: rgba(255, 255, 255, 0.04);
 }
 
-/* Active Tab Pill (JetBrains Blue Highlight) - position-based, works for any number of tabs/groups */
-.jb-tabs-container > input:nth-of-type(1):checked ~ .jb-tabs-header .jb-tab-label:nth-child(1),
-.jb-tabs-container > input:nth-of-type(2):checked ~ .jb-tabs-header .jb-tab-label:nth-child(2),
-.jb-tabs-container > input:nth-of-type(3):checked ~ .jb-tabs-header .jb-tab-label:nth-child(3),
-.jb-tabs-container > input:nth-of-type(4):checked ~ .jb-tabs-header .jb-tab-label:nth-child(4),
-.jb-tabs-container > input:nth-of-type(5):checked ~ .jb-tabs-header .jb-tab-label:nth-child(5),
-.jb-tabs-container > input:nth-of-type(6):checked ~ .jb-tabs-header .jb-tab-label:nth-child(6),
-.jb-tabs-container > input:nth-of-type(7):checked ~ .jb-tabs-header .jb-tab-label:nth-child(7),
-.jb-tabs-container > input:nth-of-type(8):checked ~ .jb-tabs-header .jb-tab-label:nth-child(8),
-.jb-tabs-container > input:nth-of-type(9):checked ~ .jb-tabs-header .jb-tab-label:nth-child(9),
-.jb-tabs-container > input:nth-of-type(10):checked ~ .jb-tabs-header .jb-tab-label:nth-child(10) {
+/* Active Tab Pill (JetBrains Blue Highlight) */
+.jb-tabs-container > input.jb-r1:checked ~ .jb-tabs-header .jb-l1,
+.jb-tabs-container > input.jb-r2:checked ~ .jb-tabs-header .jb-l2,
+.jb-tabs-container > input.jb-r3:checked ~ .jb-tabs-header .jb-l3,
+.jb-tabs-container > input.jb-r4:checked ~ .jb-tabs-header .jb-l4,
+.jb-tabs-container > input.jb-r5:checked ~ .jb-tabs-header .jb-l5,
+.jb-tabs-container > input.jb-r6:checked ~ .jb-tabs-header .jb-l6,
+.jb-tabs-container > input.jb-r7:checked ~ .jb-tabs-header .jb-l7,
+.jb-tabs-container > input.jb-r8:checked ~ .jb-tabs-header .jb-l8,
+.jb-tabs-container > input.jb-r9:checked ~ .jb-tabs-header .jb-l9,
+.jb-tabs-container > input.jb-r10:checked ~ .jb-tabs-header .jb-l10 {
   background-color: #2b2d30;
   color: #dfe1e5;
   font-weight: 600;
@@ -86,16 +86,16 @@
 }
 
 /* Content Toggling */
-.jb-tabs-container > input:nth-of-type(1):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(1),
-.jb-tabs-container > input:nth-of-type(2):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(2),
-.jb-tabs-container > input:nth-of-type(3):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(3),
-.jb-tabs-container > input:nth-of-type(4):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(4),
-.jb-tabs-container > input:nth-of-type(5):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(5),
-.jb-tabs-container > input:nth-of-type(6):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(6),
-.jb-tabs-container > input:nth-of-type(7):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(7),
-.jb-tabs-container > input:nth-of-type(8):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(8),
-.jb-tabs-container > input:nth-of-type(9):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(9),
-.jb-tabs-container > input:nth-of-type(10):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(10) {
+.jb-tabs-container > input.jb-r1:checked ~ .jb-tab-content > .jb-p1,
+.jb-tabs-container > input.jb-r2:checked ~ .jb-tab-content > .jb-p2,
+.jb-tabs-container > input.jb-r3:checked ~ .jb-tab-content > .jb-p3,
+.jb-tabs-container > input.jb-r4:checked ~ .jb-tab-content > .jb-p4,
+.jb-tabs-container > input.jb-r5:checked ~ .jb-tab-content > .jb-p5,
+.jb-tabs-container > input.jb-r6:checked ~ .jb-tab-content > .jb-p6,
+.jb-tabs-container > input.jb-r7:checked ~ .jb-tab-content > .jb-p7,
+.jb-tabs-container > input.jb-r8:checked ~ .jb-tab-content > .jb-p8,
+.jb-tabs-container > input.jb-r9:checked ~ .jb-tab-content > .jb-p9,
+.jb-tabs-container > input.jb-r10:checked ~ .jb-tab-content > .jb-p10 {
   display: block;
 }
 
