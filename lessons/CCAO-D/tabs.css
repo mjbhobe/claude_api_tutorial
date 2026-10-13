@@ -18,6 +18,7 @@
   border-bottom: 1px solid #393b40;
   padding: 4px 8px 0 8px;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
 /* Hide actual radio inputs */
@@ -44,10 +45,17 @@
   background-color: rgba(255, 255, 255, 0.04);
 }
 
-/* Active Tab Pill (JetBrains Blue Highlight) */
-#tab1:checked ~ .jb-tabs-header label[for="tab1"],
-#tab2:checked ~ .jb-tabs-header label[for="tab2"],
-#tab3:checked ~ .jb-tabs-header label[for="tab3"] {
+/* Active Tab Pill (JetBrains Blue Highlight) - position-based, works for any number of tabs/groups */
+.jb-tabs-container > input:nth-of-type(1):checked ~ .jb-tabs-header .jb-tab-label:nth-child(1),
+.jb-tabs-container > input:nth-of-type(2):checked ~ .jb-tabs-header .jb-tab-label:nth-child(2),
+.jb-tabs-container > input:nth-of-type(3):checked ~ .jb-tabs-header .jb-tab-label:nth-child(3),
+.jb-tabs-container > input:nth-of-type(4):checked ~ .jb-tabs-header .jb-tab-label:nth-child(4),
+.jb-tabs-container > input:nth-of-type(5):checked ~ .jb-tabs-header .jb-tab-label:nth-child(5),
+.jb-tabs-container > input:nth-of-type(6):checked ~ .jb-tabs-header .jb-tab-label:nth-child(6),
+.jb-tabs-container > input:nth-of-type(7):checked ~ .jb-tabs-header .jb-tab-label:nth-child(7),
+.jb-tabs-container > input:nth-of-type(8):checked ~ .jb-tabs-header .jb-tab-label:nth-child(8),
+.jb-tabs-container > input:nth-of-type(9):checked ~ .jb-tabs-header .jb-tab-label:nth-child(9),
+.jb-tabs-container > input:nth-of-type(10):checked ~ .jb-tabs-header .jb-tab-label:nth-child(10) {
   background-color: #2b2d30;
   color: #dfe1e5;
   font-weight: 600;
@@ -78,9 +86,16 @@
 }
 
 /* Content Toggling */
-#tab1:checked ~ .jb-tab-content #content1,
-#tab2:checked ~ .jb-tab-content #content2,
-#tab3:checked ~ .jb-tab-content #content3 {
+.jb-tabs-container > input:nth-of-type(1):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(1),
+.jb-tabs-container > input:nth-of-type(2):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(2),
+.jb-tabs-container > input:nth-of-type(3):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(3),
+.jb-tabs-container > input:nth-of-type(4):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(4),
+.jb-tabs-container > input:nth-of-type(5):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(5),
+.jb-tabs-container > input:nth-of-type(6):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(6),
+.jb-tabs-container > input:nth-of-type(7):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(7),
+.jb-tabs-container > input:nth-of-type(8):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(8),
+.jb-tabs-container > input:nth-of-type(9):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(9),
+.jb-tabs-container > input:nth-of-type(10):checked ~ .jb-tab-content > .jb-tab-panel:nth-child(10) {
   display: block;
 }
 
