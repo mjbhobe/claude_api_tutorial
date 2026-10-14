@@ -251,3 +251,44 @@ Many environment variables govern authentication, network routing, governance, a
 <span style="font-size: 1.25em;">_Four categories of shortcuts: teach them in this order
 Not all shortcuts are equal. Some change the interaction model; some are housekeeping. Sequence matters when you're enabling a client team who is already overloaded on Day 1._</span>
 
+| | |
+| :-- | :-- |
+| <small>**BASH MODE**</small><br><br>`!` **prefix**<br><br>Runs a shell command directly. The command output is shown to Claude Code, so you can reference it in the next prompt. Faster than asking Claude to run a known command. Teach this first. It's the shortcut that changes how developers think about the tool. | <small>**CONTEXT MANAGEMENT**</small><br><br>`/clear` `/compact` `/context`<br><br>**/clear** resets the conversation (not the files). **/compact** condenses context to save space without losing the thread. **/context** visualises how much context window is in use.<br><br>**Recommended teaching sequence:** Introduce these in week two, after developers have hit a context limit and asked why the model seems to be forgetting things. |
+| <small>**NAVIGATION**</small><br><br>`Esc` `Esc Esc` `Shift+Tab`<br><br>**Esc** cancels the current action mid-run. **Esc Esc** opens a rewind menu — Fork conversation, Rewind code, or Fork + Rewind — when the input is empty. If the input contains text, Esc Esc clears the draft instead. **Shift+Tab** cycles through three execution modes:<br><br>• **default: standard behaviour**<br>• **auto-accept edits: applies changes without prompting**<br>• **plan: presents proposed changes and waits for approval before executing**<br><br>Plan mode is the one that matters for enterprise clients with strict code review requirements. | <small>**FILE CONTEXT AND SESSION**</small><br><br>`@` `--continue` `/model`<br><br>**@** adds a file or folder to context by path. **--continue** (or **-c**) resumes the most recent conversation when starting a new Claude Code session from the shell; **--resume \<session-id\>** resumes a specific one. These are CLI flags, not slash commands. Use them when starting Claude Code, not inside an active session.<br><br>**/model** switches the underlying model mid-session without restarting. Remember: Teach when relevant to maximize impact rather than Day 1 with everything else. |
+
+### Bash mode
+
+<span style="font-size: 1.25em;">_Teach bash mode first: it shifts how developers see the tool_</span>
+
+Your developers will see Claude Code as an extension of their terminal, not a separate system. That shift happens on Day 1 when you teach the ! prefix.
+
+**Why this matters for your developers:** Without bash mode, asking Claude Code to run a test or build command means Claude decides what to run, the developer waits for output, then pastes it back. With bash mode, developers type the command they already know, it runs immediately, and the output is already in Claude's context. No intermediary step. That efficiency changes the engagement from "let's try this AI tool" to "this fits how I work."
+
+**How bash mode works:** The `!` prefix tells Claude Code to run a shell command directly without interpretation. The command and its output are visible to Claude in the next prompt, so developers can immediately follow up and reference what was printed, with no copy-pasting required.
+
+```bash
+# Run a command directly — output goes to Claude's context
+! npm test
+
+# Now ask Claude about the output — it already saw it
+Fix the failing tests in the output above
+```
+
+### Shell patterns
+
+<span style="font-size: 1.25em;">_Piping data into Claude Code: the bridge to CI automation_</span>
+
+Shell piping works with Claude Code the same way it works with any Unix command. The patterns here are the building blocks you'll use again in Lesson 2.5 when setting up client CI pipelines.
+
+Use the pipe operator to send any shell output directly to Claude Code as the prompt input. This works for log files, git diffs, PR output, error messages. Anything the shell can produce, Claude Code can consume. Combined with the `-p` flag for non-interactive use, these become the pipeline patterns in Lesson 2.5.
+
+```bash
+# Pass a log file to Claude for analysis
+cat error.log | claude
+
+# Pipe a PR diff for a security review
+gh pr diff "$1" | claude -p --append-system-prompt "Review for security vulnerabilities"
+
+# Pass git log output for a summary
+git log --oneline -20 | claude -p "Summarise these commits for a release note"
+```
