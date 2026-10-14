@@ -2,7 +2,6 @@
 
 ## CLI install and prerequisites across OS and platforms
 
-
 <span style="font-size: 1.25em;">_The install is one command. Getting there is the work._</span>
 
 Before any developer on a client engagement runs Claude Code, you need to confirm the environment. This lesson covers the pre-kickoff checklist you send to IT, the clean install walk-through, and how to diagnose what breaks when something goes wrong.
@@ -134,7 +133,7 @@ For Cursor, use the same extension. It's available at `cursor:extension/anthropi
 
 For JetBrains (IntelliJ, PyCharm, and the rest of the family), two separate installs are required: first install the Claude Code CLI using the installer from Lesson 2.1, then install the Claude Code plugin from the JetBrains Marketplace. The plugin enables IDE integration (diff viewing, selection context, file references, diagnostics); the CLI provides the Claude Code engine. Both must be installed for the full experience.
 
-## Running sessions
+### Running sessions
 
 Run `claude` from the integrated terminal to start a session. For a mixed cohort, this means two setup paths: VS Code and Cursor developers install the VS Code extension; JetBrains developers install both the CLI and the plugin.
 
@@ -210,23 +209,25 @@ You're running the Claude Code kickoff session. One of the client's developers r
 
 <span style="font-size: 1.25em;">_By the end of this lesson you'll know which terminal patterns to demonstrate on Day 1, which ones to teach in week two, and how to feed real data into Claude Code via the shell. This pattern bridges interactive use and the CI pipelines in Lesson 2.5._</span>
 
-Before first use
-The authentication variable that most silently blocks a first run
+### Before first use
+
+<span style="font-size: 1.15em;">_The authentication variable that most silently blocks a first run_</span>
+
 The authentication method for a client deployment depends on architecture. Confirm it before the first developer session, not during it.
 
-### Authentication methods
+#### Authentication methods
 
 Interactive developers on a Team or Enterprise plan typically authenticate via browser-based subscription login. API keys are the standard for CI, headless, and automated workflows. Cloud-provider routing (Bedrock, Vertex AI) is a third path for clients who deploy through AWS or GCP. When an API key is used, it goes in the developer's shell profile (`~/.zshrc` or `~/.bashrc` on most client machines) or, for headless and CI environments, in a secrets store (covered in Lesson 2.5). When set, `ANTHROPIC_API_KEY` overrides subscription login.
 
 When enabling multiple developers at once, confirm key distribution with IT in advance. Walking into an enablement session without knowing whether keys have been provisioned costs time that doesn't come back.
 
-### Environment variables
+#### Environment variables
 
 Many environment variables govern authentication, network routing, governance, and runtime behaviour. You don't need to teach all of them on Day 1. When a deployment silently blocks authentication or network traffic, you'll know where to look. Six of the most scenario-relevant ones are below.
 
 ![Env Variables Check](images/cc_env_variables_test.png)
 
-### Reference Environment Variables
+#### Reference Environment Variables
 
 | VARIABLE | CATEGORY | WHAT IT DOES |
 | :-- | :-- | :-- |
@@ -248,7 +249,7 @@ Many environment variables govern authentication, network routing, governance, a
 
 ### Working in the terminal
 
-<span style="font-size: 1.25em;">_Four categories of shortcuts: teach them in this order
+<span style="font-size: 1.15em;">_Four categories of shortcuts: teach them in this order
 Not all shortcuts are equal. Some change the interaction model; some are housekeeping. Sequence matters when you're enabling a client team who is already overloaded on Day 1._</span>
 
 | | |
@@ -258,13 +259,13 @@ Not all shortcuts are equal. Some change the interaction model; some are houseke
 
 ### Bash mode
 
-<span style="font-size: 1.25em;">_Teach bash mode first: it shifts how developers see the tool_</span>
+<span style="font-size: 1.15em;">_Teach bash mode first: it shifts how developers see the tool_</span>
 
-Your developers will see Claude Code as an extension of their terminal, not a separate system. That shift happens on Day 1 when you teach the ! prefix.
+Your developers will see Claude Code as an extension of their terminal, not a separate system. That shift happens on Day 1 when you teach the `!` prefix.
 
-**Why this matters for your developers:** Without bash mode, asking Claude Code to run a test or build command means Claude decides what to run, the developer waits for output, then pastes it back. With bash mode, developers type the command they already know, it runs immediately, and the output is already in Claude's context. No intermediary step. That efficiency changes the engagement from "let's try this AI tool" to "this fits how I work."
+**Why this matters for your developers:** Without bash mode, asking Claude Code to run a test or build command means Claude decides what to run, the developer waits for output, then pastes it back. With bash mode, developers type the command they already know, it runs immediately, and the output is already in Claude's context. No intermediary step. That efficiency changes the engagement from `"let's try this AI tool"` to `"this fits how I work."`
 
-**How bash mode works:** The `!` prefix tells Claude Code to run a shell command directly without interpretation. The command and its output are visible to Claude in the next prompt, so developers can immediately follow up and reference what was printed, with no copy-pasting required.
+**How bash mode works:** The `!` (bang!) prefix tells Claude Code to run a shell command directly without interpretation. The command and its output are visible to Claude in the next prompt, so developers can immediately follow up and reference what was printed, with no copy-pasting required.
 
 ```bash
 # Run a command directly — output goes to Claude's context
@@ -276,11 +277,11 @@ Fix the failing tests in the output above
 
 ### Shell patterns
 
-<span style="font-size: 1.25em;">_Piping data into Claude Code: the bridge to CI automation_</span>
+<span style="font-size: 1.15em;">_Piping data into Claude Code: the bridge to CI automation_</span>
 
 Shell piping works with Claude Code the same way it works with any Unix command. The patterns here are the building blocks you'll use again in Lesson 2.5 when setting up client CI pipelines.
 
-Use the pipe operator to send any shell output directly to Claude Code as the prompt input. This works for log files, git diffs, PR output, error messages. Anything the shell can produce, Claude Code can consume. Combined with the `-p` flag for non-interactive use, these become the pipeline patterns in Lesson 2.5.
+**Use the pipe operator to send any shell output directly to Claude Code as the prompt input.** This works for log files, git diffs, PR output, error messages. Anything the shell can produce, Claude Code can consume. Combined with the `-p` flag for non-interactive use, these become the pipeline patterns in Lesson 2.5.
 
 ```bash
 # Pass a log file to Claude for analysis
@@ -292,3 +293,151 @@ gh pr diff "$1" | claude -p --append-system-prompt "Review for security vulnerab
 # Pass git log output for a summary
 git log --oneline -20 | claude -p "Summarise these commits for a release note"
 ```
+
+## Development containers & sandboxed execution
+
+<span style="font-size: 1.25em;">_When a client's IT security team asks what Claude Code can access, the answer depends on which isolation boundary is in place. This lesson covers the isolation options, what each one covers, and how to configure them, so you can answer security questionnaires accurately, not optimistically._</span>
+
+### The security case
+
+<span style="font-size: 1.15em;">_Isolation has layers. "It's sandboxed" is not a complete security answer._</span>
+
+On enterprise engagements, the question of what Claude Code can access (and what it can't) will come up in the security review. The correct answer is not `"sandboxed"`; it's `"depends on which isolation layer is in place."`
+
+Claude Code offers multiple isolation options, each covering different access surfaces. The built-in Bash sandbox restricts Bash subprocesses and child processes, but it does not restrict Claude Code's _built-in_ file tools, MCP servers, hooks, or web access. Those surfaces require additional isolation: a sandbox runtime, a dev container, or a VM. When IT asks `"what can Claude Code access?"`, the honest answer is: `"depends on the isolation boundary we configure."` That's what this lesson covers.
+
+| ACCESS SURFACE | BUILT-IN BASH SANDBOX | SANDBOX RUNTIME | CONTAINER / VM |
+| :--- | :--- | :--- | :--- |
+| Bash commands | <img src="images/green_tick.png" width="14" alt="tick"/> Restricted | <img src="images/green_tick.png" width="14" alt="tick"/> Restricted | <img src="images/green_tick.png" width="14" alt="tick"/> Restricted |
+| File tools (Read/Write) | <img src="images/red_cross.png" width="14" alt="cross"/> Full access | <img src="images/green_tick.png" width="14" alt="tick"/> Restricted | <img src="images/green_tick.png" width="14" alt="tick"/> Restricted |
+| MCP servers | <img src="images/red_cross.png" width="14" alt="cross"/> Full access | <img src="images/red_cross.png" width="14" alt="cross"/> Full access | <img src="images/green_tick.png" width="14" alt="tick"/> Restricted |
+| Hooks | <img src="images/red_cross.png" width="14" alt="cross"/> Full access | <img src="images/red_cross.png" width="14" alt="cross"/> Full access | <img src="images/green_tick.png" width="14" alt="tick"/> Restricted |
+| Web access | <img src="images/red_cross.png" width="14" alt="cross"/> Full access | <img src="images/green_tick.png" width="14" alt="tick"/> Restricted | <img src="images/green_tick.png" width="14" alt="tick"/> Restricted |
+
+### The controls
+
+<span style="font-size: 1.15em;">_Four properties of Claude Code's sandboxing model_</span>
+
+Each of these is a talking point in a security questionnaire conversation, and a configuration decision before deployment.
+
+| | |
+| :--- | :--- |
+| <span style="font-size: 1.25em;">01</span><br><br>**Directory scoping**<br><br>Claude Code can be restricted to specific directories. It cannot read or write outside the defined scope. For a developer working in a project directory, this means Claude Code stays inside the project. It cannot access the developer's home directory, other codebases, or system files unless explicitly permitted. | <span style="font-size: 1.25em;">02</span><br><br>**Network allowlisting**<br><br>Outbound network requests from Claude Code can be constrained to a defined allowlist of hosts. Attempts to reach endpoints outside the allowlist are blocked. This is particularly relevant in regulated industries where data exfiltration controls are part of the security posture. |
+| <span style="font-size: 1.25em;">03</span><br><br>**Approval-free operation within bounds**<br><br>Operations inside the defined sandbox proceed without interrupting the developer for confirmation. This preserves the productivity benefit: developers aren't approving every file read or every shell command, while the scope of autonomous action stays explicitly bounded. | <span style="font-size: 1.25em;">04</span><br><br>**Out-of-sandbox notification**<br><br>When Claude Code attempts an operation outside the sandbox boundary, it surfaces the attempt rather than silently failing or silently escalating. The developer sees what was attempted and can decide whether to expand the sandbox or redirect the approach. This is the transparency property: it's what makes the boundary meaningful rather than opaque. |
+
+### Configuration
+
+<span style="font-size: 1.15em;">_Sandbox configuration lives in `settings.json`: three field groups to know_</span>
+
+Sandbox controls are configured declaratively. A minimal working example covers most enterprise requirements in under 20 lines.
+
+Sandbox configuration for Claude Code is managed through `settings.json`, either at the user level (`~/.claude/settings.json`) or deployed via managed settings for a team. Three field groups do the work: sandbox (process isolation and filesystem bounds), permissions (tool-level allow/deny rules), and network (outbound domain allowlisting). Here's a minimal configuration that covers a typical enterprise hardening requirement:
+
+```json
+{
+  "sandbox": {
+    "enabled": true,
+    "filesystem": {
+      "denyRead": ["/"],
+      "allowRead": ["/project", "~/.claude"],
+      "allowWrite": ["/project"]
+    },
+    "network": {
+      "allowedDomains": [
+        "api.anthropic.com",
+        "*.client-internal.com"
+      ]
+    }
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run test *)",
+      "Bash(npm run lint)",
+      "Read(/project/**)"
+    ],
+    "deny": [
+      "Bash(curl *)",
+      "Read(./.env)",
+      "Read(~/.ssh/**)"
+    ],
+    "defaultMode": "acceptEdits"
+  }
+}
+```
+
+Key fields to know for the security questionnaire conversation:
+
+| | |
+| :--- | :--- |
+| **sandbox.filesystem.denyRead / allowRead**<br><br>Sets the directory boundary. Deny the root, then re-allow the project directory. This is what lets you tell the security team "it can't read SSH keys" rather than "it probably won't." | **sandbox.network.allowedDomains**<br><br>Outbound domain allowlist. Wildcards are supported (`*.client-internal.com`). Set this to enforce egress policy rather than relying on firewall rules alone. |
+| **permissions.deny**<br><br>Tool-level deny rules. Block specific bash patterns (`curl *`) or file access (`Read(./.env)`). These rules cannot be overridden by local config when deployed in managed settings. | **permissions.defaultMode**<br><br>Default permission mode on launch. Options: `default`, `acceptEdits`, `plan`, `auto`. Use `acceptEdits` for teams that want edits to auto-approve while still confirming bash commands. |
+
+### Dev containers
+
+<span style="font-size: 1.15em;">_Running Claude Code inside a container adds an outer boundary to the inner one_</span>
+
+A dev container is the natural complement to sandbox configuration for enterprise clients who want reproducible, isolated developer environments.
+
+When Claude Code runs inside a dev container, the container itself provides a second layer of isolation. The file system, network, and process scope are all bounded by the container definition before Claude Code's own sandbox controls apply. For client security teams, this is a strong answer to questions about isolation: both the tool and the environment are constrained. Anthropic provides an official dev container feature that handles the Claude Code install automatically.
+
+> <small>devcontainer.json: Claude Code feature</small>
+>
+> ```json
+> {
+>   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+>   "features": {
+>     "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+>   }
+> }
+> ```
+
+The feature version pins the install script, not the Claude Code release. Claude Code auto-updates inside containers by default unless auto-update is disabled via `DISABLE_AUTOUPDATER`. For environments with pinned version policies, set this variable explicitly. Full devcontainer documentation is at [code.claude.com/docs/en/devcontainer](code.claude.com/docs/en/devcontainer).
+
+### Engagement scenario
+
+**The security questionnaire question**
+
+You're on a call with the client's IT security lead, walking through the Claude Code deployment plan.
+
+> [!Note]
+> <small>Decision · Scenario</small>
+>
+> The security lead asks: <small>`"Could a developer accidentally configure Claude Code to read files outside their project directory, say their SSH keys or credentials in their home folder?"`</small> What do you tell them?
+
+![Answer](images/security_questionnaire.png)
+
+## Headless and non-interactive mode for scripted and CI use
+
+<span style="font-size: 1.25em;">_Once a client team has Claude Code running interactively, the next question is always the same: can we automate this? By the end of this lesson you'll know the flags, the patterns, and the GitHub Actions integration, and be ready to design a headless Claude Code workflow for a real engagement._</span>
+
+### The concept
+
+<span style="font-size: 1.15em;">_The `-p` flag is the on/off switch for pipeline use._</span>
+
+Headless mode is not a separate product or a different tool. It's a flag. That simplicity is worth emphasising to a client team who assumes a CI integration means a new deployment to manage.
+
+Adding `-p` to the Claude Code command makes it run non-interactively: it takes the prompt from the command line argument, executes, and exits. No waiting for input, no interactive session. This is what makes Claude Code composable with shell scripts, CI pipelines, pre-commit hooks, and any automated workflow. The same binary, the same authentication, the same model, just invoked without a human in the loop.
+
+### Key flags
+
+<span style="font-size: 1.15em;">_Five flags that shape every headless workflow_</span>
+
+Most headless Claude Code commands on an engagement use some combination of these five. Know what each one controls and when to reach for it.
+
+|  | |
+| :---: | :--- |
+| <span style="font-size: 1.25em; font-weight: bold;">1</span> | `-p` : **Non-interactive mode**<br><br>Runs Claude Code without an interactive session, making it required for any pipeline use. Takes the prompt as a string argument: `claude -p "Your prompt here"`. Use this any time Claude Code runs in a script or automated workflow. |
+| <span style="font-size: 1.25em; font-weight: bold;">2</span> | `--allowedTools` : **Tool restriction**<br><br>Restricts which tools Claude Code can use in this execution. Pass a comma-separated list: `--allowedTools "Bash,Read,Edit"`. Use this when the pipeline should be limited: a code review that reads files but doesn't execute shell commands, for example. |
+| <span style="font-size: 1.25em; font-weight: bold;">3</span> | `--append-system-prompt` : **Pipeline instructions**<br><br>Injects a system-level instruction that applies to this execution. Use this to set the context for an automated task: "this is a security review", "always output in JSON", "focus only on the changed files". It's how you specialise the same tool for different pipeline stages. |
+| <span style="font-size: 1.25em; font-weight: bold;">4</span> | `--output-format json` : **Structured output**<br><br>Outputs Claude Code's response as JSON rather than prose. Essential when the output feeds into another system: a dashboard, a ticket, a database. Specify the expected schema in the prompt itself: *"Output a JSON array where each item has 'path' (string) and 'method' (string)."* For workflows requiring strict schema conformance, implement retry logic and validate output format in your pipeline. Test schema compliance in a controlled run before deploying to production. |
+| <span style="font-size: 1.25em; font-weight: bold;">5</span> | `--bare` : **Reproducible CI mode**<br><br>Disables local hooks, skills, plugins, MCP servers, auto memory, and CLAUDE.md loading for this execution. Use when you need consistent behaviour across environments: the same command produces the same result regardless of what's configured on any individual developer's machine. Combine with `-p` for fully isolated, reproducible CI workflows: `claude -p --bare 'Your prompt here'`. |
+
+### In practice
+
+<span style="font-size: 1.15em;">_Three patterns to show a client team, each from a real use case_</span>
+
+These patterns come directly from the source material. They're functional, not illustrative: show them running, not just described.
+
+| | | |
+| :--- | :--- | :--- |
+| <span style="font-size: 1.25em;">01</span><br><br>**Automated code review**<br><br>Pipes a PR diff into Claude Code with a security review system prompt. The output is JSON, suitable for posting back to the PR or feeding into a dashboard. | <span style="font-size: 1.25em;">02</span><br><br>**Test-and-fix loop**<br><br>Runs the test suite and instructs Claude Code to fix failures. Limits tool access to the operations needed, with no extraneous permissions. Stops after the test run regardless of outcome. | <span style="font-size: 1.25em;">03</span><br><br>**Structured extraction**<br><br>Extracts structured information from a codebase (API endpoints, dependencies, configuration values) and outputs it as JSON with a specified structure that downstream tooling can parse directly. Schema is defined in the prompt. |
