@@ -8,7 +8,7 @@ This module treats prompting as a communication discipline with learnable struct
 
 ## Anatomy of an Effective Prompt
 
-<span style="font-size: 1.25em;">_A strong prompt is built from components, and most weak prompts are missing one or more of them._</span> 
+<span style="font-size: 1.15em;">_A strong prompt is built from components, and most weak prompts are missing one or more of them._</span> 
 
 Naming the components turns prompting from guesswork into a checklist you can run before sending any non-trivial request.
 
@@ -56,17 +56,18 @@ Same model, same data. The second prompt produces a draft the analyst can refine
 >
 > Run the five components in your head: have I given Claude the `role`, the `context` it cannot infer, an unambiguous `task`, the `constraints`, and the `format` I want back? Thirty seconds of specification routinely saves several rounds of correction.
 
-> 🎗️ **REMEMBER - C R A F T**
+> 🎗️ **REMEMBER - C • T • R • O • C (_See-Troc_)**
 >
 > * `C`ontext: the background the model needs (e.g., "We are a mid-size Indian NBFC reviewing personal loan complaints")
+> * `T`ask: the Task, stated as a specific verb-led instruction (Summarize, extract, classify etc.)
 > * `R`ole: who Claude should act as (e.g., "a senior credit risk analyst")
-> * `A`ction: the Task, stated as a specific verb-led instruction ('Classify', 'Summarize' etc.)
-> * `F`ormat: how the output should look (table, JSON, bulleted list)
-> * `T`ype of limits (constraints): tone, length, what to avoid)
+ ('Classify', 'Summarize' etc.)
+> * `O`utput Format: how the output should look (table, JSON, bulleted list)
+> * `C`onstraints: tone, length, what to avoid)
 
 ## Task Decomposition for Complex Requests
 
-<span style="font-size: 1.25em;">_Some requests are too large to specify as a single instruction**._</span>
+<span style="font-size: 1.15em;">_Some requests are too large to specify as a single instruction._</span>
 
 When a task has several distinct stages, packing it into one prompt produces shallow work on every stage. Decomposition is how you break a complex request into a sequence Claude can execute well.
 
@@ -121,7 +122,7 @@ Steps 1 and 2 build a verified foundation that the three deliverables all draw o
 
 ## Iterating Prompts to Improve Output
 
-A first draft from Claude rarely lands perfectly. _The skill is not rewriting the whole prompt when output disappoints. It is reading the output to diagnose which component fell short, then fixing that one thing._
+<span style="font-size: 1.15em;">_A first draft from Claude rarely lands perfectly. The skill is not rewriting the whole prompt when output disappoints. It is reading the output to diagnose which component fell short, then fixing that one thing._</span>
 
 ### Output deficiencies are prompt diagnostics
 
@@ -167,17 +168,14 @@ Iteration has converged when each additional round produces marginal change rath
 
 ## Adapting Strategy by Task Type
 
-_The component stack applies to every prompt, but the emphasis shifts with the task_.
+<span style="font-size: 1.15em;">_The component stack applies to every prompt, but the emphasis shifts with the task._</span>
 
 Analysis, research, drafting, and brainstorming each reward a different balance of specificity and creative latitude. Using one fixed style across all four costs quality on every task it does not fit.
 
-> **Analysis.** Want tight constraints and explicit criteria. Tell Claude what to measure, against what standard, and how to handle ambiguity. _Low creative latitude; high specification_.
->
-> **Research.** Wants clear scope and source discipline. Define the question, the boundaries, and whether current sources are required. Quick currency needs can be met by turning on web search in chat, while deep multi-source investigation points to Research (available on paid plans). Ask for citations so claims are checkable.
->
-> **Drafting.** Wants audience, tone, and format specified, with room for Claude to find the phrasing. Medium latitude: you control the shape, Claude fills it.
->
-> **Brainstorming.** Wants loose constraints and high latitude. Over-specifying kills the divergence you are after. Give the goal and the boundaries, then ask for volume and range before you narrow.
+> 1. **Analysis.** Want tight constraints and explicit criteria. Tell Claude what to measure, against what standard, and how to handle ambiguity. _Low creative latitude; high specification_.
+> 2. **Research.** Wants clear scope and source discipline. Define the question, the boundaries, and whether current sources are required. Quick currency needs can be met by turning on web search in chat, while deep multi-source investigation points to Research (available on paid plans). Ask for citations so claims are checkable.
+> 3. **Drafting.** Wants audience, tone, and format specified, with room for Claude to find the phrasing. Medium latitude: you control the shape, Claude fills it.
+> 4. **Brainstorming.** Wants loose constraints and high latitude. Over-specifying kills the divergence you are after. Give the goal and the boundaries, then ask for volume and range before you narrow.
 
 ### Strategy quick reference
 
@@ -190,9 +188,9 @@ Analysis, research, drafting, and brainstorming each reward a different balance 
 
 ### Four mini-demos, one per task type
 
-> **Analysis**. "Compare these two vendor contracts on payment terms, termination rights, and liability caps. For each, state which contract is more favorable to us and why, in a three-row table." Tight criteria, defined output, no room to wander.
+> **Analysis**. "Compare these two vendor contracts on payment terms, termination rights, and liability caps. For each, state which contract is more favorable to us and why, in a three-row table." **Tight criteria, defined output, no room to wander**.
 >
-> **Research**. "Using current sources, summarize how three named competitors positioned their Q2 launches. Cite each source. Flag anything you cannot verify." Scope and citation discipline up front; Research (or web search in chat for lighter needs) supplies the currency.
+> **Research**. "Using current sources, summarize how three named competitors positioned their Q2 launches. Cite each source. Flag anything you cannot verify." **Scope and citation discipline up front; Research (or web search in chat for lighter needs) supplies the currency**.
 >
 > **Note:** citations are checkable when they come from a grounded source (web search or Research results); citations produced from training memory alone can look equally confident and should be independently verified.
 >

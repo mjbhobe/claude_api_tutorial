@@ -9,7 +9,7 @@
 > The ten minutes saved on research cost a credibility hit and a week of rebuilding trust. Nothing about the figure looked wrong on the screen. That is the problem this module is intended to solve: the cost of a missed error is not paid when you save the time, it is paid later, by someone whose trust you needed.
 > &nbsp;<br/><br/>
 
-<span style="font-size: 1.25em;">_Claude saved you twenty minutes drafting an analysis. One fabricated figure in that analysis, sent to a client or a regulator, can cost far more than twenty minutes to undo._</span>
+<span style="font-size: 1.15em;">_Claude saved you twenty minutes drafting an analysis. One fabricated figure in that analysis, sent to a client or a regulator, can cost far more than twenty minutes to undo._</span>
 
 This is the asymmetry at the center of professional AI use: the time saved is small and visible, and the cost of an unverified error is large and arrives later.
 
