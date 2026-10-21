@@ -1,0 +1,8 @@
+Generate markdown code for a 2 x 2 table for content of attached image. Generate complete text
+for content shown - respect font styles (bold, italic, fixed etc.) and sizes, ignore
+colors. Do not set width of each table column. Do not insert row separators like | -- |
+between rows. Keep column headers blank, like | |. Left align each column, like | :-- |.
+Do not include any citations like [cite: XX]. Always end table with a blank row. To increase font size,
+use <span class="font-size ..."> instructions - don't use heading markers instead.
+
+Generate markdown code that I can paste directly into VS Code Markdown editor.
