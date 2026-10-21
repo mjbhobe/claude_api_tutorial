@@ -29,15 +29,22 @@ Before selecting entry points and models, there are five behavioral properties t
 
 Claude appears in one interface, but that interface offers four distinct working entry points: `Chat`, `Projects`, `Artifacts`, and `Research Mode`. Choosing the right one before starting work determines how efficiently the session runs and whether the context you build today carries forward to tomorrow.
 
-* **Chat**: Chat is the default entry point, an unstructured conversation. A Chat is saved to your history and can be continued later, and Memory plus past-chat search can carry key context into new sessions; what Chat does not give you is a Project's deliberate persistence, standing instructions and a curated knowledge base. Use Chat for one-off questions, quick drafts, exploratory prompting, and tasks you will not repeat. Chat works well for any task where the work starts and ends in that session. However, when you find yourself opening a new Chat by pasting the same background paragraph you pasted last week, that workstream has outgrown Chat.
+![Claude Entry Points](images/claude_entry_points.png)
+
+* **Chat**: Chat is the default entry point, an unstructured conversation. A Chat is saved to your history (the _lists_ that you see along the left side of the chat window) and can be continued later, and Memory plus past-chat search can carry key context into new sessions; what Chat does not give you is a Project's deliberate persistence, standing instructions and a curated knowledge base. Use Chat for one-off questions, quick drafts, exploratory prompting, and tasks you will not repeat. Chat works well for any task where the work starts and ends in that session. However, when you find yourself opening a new Chat by pasting the same background paragraph you pasted last week, that workstream has outgrown Chat.
 * **Projects**: Projects are persistent workspaces. A Project holds three things:
     * **Standing instructions**: what Claude should know and do consistently across every conversation in this space
     * **Knowledge base**: documents, policies, and reference files uploaded once so Claude can draw on them without re-uploading each session
     * **Conversation history**: each Project maintains its own conversation list, separate from your global conversation history. Conversations within a Project share the Project's instructions and knowledge base, but they do not share context with each other.
 
     **Projects solve the most common productivity drain in AI-assisted professional work**: re-explaining the same background every session. Set the context once in the Project's standing instructions and knowledge base. Every conversation that follows starts with that context already in place.
+
+    So assume I am responding to an RFP from a customer "Acme Inc". The documents they provide, which I will upload, will be my **Knowledge Base**. I will add a **Standing Instruction**.
+
 * **Artifacts**: Artifacts are the right output format when the result is a deliverable rather than a conversational reply. When Claude produces an Artifact, it appears as a separate, editable block alongside the chat rather than flowing into the conversation thread. Use Artifacts for draft documents, data tables, formatted reports, and code. Use inline responses for answers you will act on within the conversation.
-* **Research**: Research enables deep multi-source synthesis (available on paid plans). Regular Chat can search the web: web search is available on all Claude plans as a per-chat toggle in the chat input; on Team and Enterprise plans, an Owner or Primary Owner must first enable web search for the workspace in the organization's capability settings before members can switch it on. Official documentation does not specify whether the toggle is on or off by default. Research goes further: it runs multi-step searches across multiple sources and synthesizes them. **Use Research when the task needs deep investigation across a range of sources, or synthesis of current information beyond a quick lookup**.
+
+    For example, when you ask Claude to generate a final PDF for a trip plan to a certain location, with photos, hotels, flight plan etc.
+* **Research**: Research enables deep multi-source synthesis (available on paid plans). Regular Chat can search the web: web search is available on all Claude plans as a per-chat toggle in the chat input. On Team and Enterprise plans, an Owner or Primary Owner must first enable web search for the workspace in the organization's capability settings before members can switch it on. Official documentation does not specify whether the toggle is on or off by default. Research goes further: it runs multi-step searches across multiple sources and synthesizes them. **Use Research when the task needs deep investigation across a range of sources, or synthesis of current information beyond a quick lookup**.
 
 ### Selection Logic
 
@@ -52,7 +59,7 @@ Claude appears in one interface, but that interface offers four distinct working
 
 ### Skill and Code Execution 
 
-_Entry points determine where you work. The capability layer determines what Claude can do within that entry point_.
+<span style="font-size: 1.15em;">_Entry points determine where you work. The capability layer determines what Claude can do within that entry point._</span>
 
 Three features extend Claude's default text-generation behavior in ways that matter for professional work: `Skills` for consistent procedures, `Code Execution` for verified computation, and `Memory` for continuity across sessions.
 
@@ -95,7 +102,7 @@ Importing memories from other AI platforms is an experimental feature as of June
 ```
 A business analyst produced a regulatory tracking report once a month. The task was consistent: take that month's regulatory updates, identify which applied to the portfolio, summarize the implications, and format the output per a defined template. The task was high stakes, but with a repeatable structure.
 
-For the first two months, she ran the workflow in Chat. Each session, she uploaded the regulatory documents, re-pasted the portfolio context, and re-typed the format instructions. She ran a verification step on every numeric figure. She caught two errors in month one and one in month two, all before the report went out.
+For the first two months, she ran the workflow in Chat. Each session, she uploaded the regulatory documents, re-pasted the portfolio context [assuming this is a lending business, a portfolio context would hold a> details of business lines - home loans, car loans etc. & outstandings per business lines, b> how the bank operates (e.g. digital lending runs through 4 third-parties, all data is hosted in India with XX cloud provider etc. c> regulations that apply such as RBI, SEBI,IRDA etc. - every time regulation changes, the analyst uploads new copy. d> Reporting conventions such as amounts to be reported in INR crores with 2 decimal places etc.)], and re-typed the format instructions. She ran a verification step on every numeric figure. She caught two errors in month one and one in month two, all before the report went out.
 
 In month three, she rebuilt the workflow using the capability layer. The portfolio context and standing format instructions went into the Project, prior reports went into the knowledge base, she enabled a Skill for the report output format, and numeric calculations moved to Code Execution.
 
@@ -113,7 +120,7 @@ The time per session dropped from 65 minutes to 30, and the verification step st
 
 ## Choosing Models - Haiku, Sonnet, Opus
 
-The capability layer determines what Claude does. The model determines how well Claude does it, and at what cost in speed.
+<span style="font-size: 1.15em;">_The capability layer determines what Claude does. The model determines how well Claude does it, and at what cost in speed._</span>
 
 Different model tiers in the Claude family span a range from efficient-and-fast to thorough-and-capable. Matching the tier to the task avoids both over-engineering routine work and under-resourcing high-stakes analysis.
 
@@ -122,6 +129,8 @@ Different model tiers in the Claude family span a range from efficient-and-fast 
 | Haiku | Haiku is the **fastest and most efficient model** (token consumption wise) in the Claude family. It handles structured tasks well. **Recommended for:  classification, extraction, formatting, straightforward summarization, and high-volume routine work where speed matters and the cost of an imperfect output is low**. When a task runs at volume across hundreds of items in sequence, Haiku's speed advantage compounds. |
 | Sonnet | Sonnet is the balanced tier. It **handles the full range of professional tasks with strong quality across task types: drafting, synthesis, analysis, research assistance, and document review**. For most knowledge-worker work, Sonnet is the right starting point. _If quality is falling short for a complex task, upgrade to Opus_. If speed and volume are the primary requirements and the task is structured, then consider Haiku. |
 | Opus | Opus is a **higher-capability tier**, offering more advanced performance than Sonnet and Haiku. Use it **for tasks that require nuanced judgment, complex multi-step reasoning, ambiguous inputs that require interpretation, or any work where quality outranks speed**. Client-facing deliverables, complex document analysis, strategic planning, and high-stakes synthesis across multiple sources are typical Opus candidates. |
+| Fable | Introduced in June 2026, Fable is the **top-capability tier**, sitting above Opus in Anthropic's Mythos-class group of models. Use it **for long-horizon work that runs for hours across many dependent steps: large-scale coding and refactoring, agentic workflows that execute autonomously, and multimodal research that combines documents, images, and data**. Typical candidates are complex system migrations, end-to-end agent builds, and high-stakes analysis where Opus output still falls short. Fable is priced above Opus, so reserve it for tasks where the quality gain justifies the extra cost. _If Opus already meets your quality bar, stay with Opus_. Extra safeguards around biology, cybersecurity, and AI research topics may limit some requests. |
+
 
 #### Decision Logic
 
@@ -130,8 +139,13 @@ Different model tiers in the Claude family span a range from efficient-and-fast 
 | Routine, structured extraction or classification at volume | Haiku |
 | Most professional drafting, synthesis, and analysis | Sonnet |
 | Complex judgment, high-stakes output, ambiguous or multi-layered inputs | Opus |
+| Long-running agentic or coding work, large multi-step builds, multimodal research where Opus falls short | Fable |
+| | |
 
-> **NOTE:** ON USAGE AND COST
+
+> [!Important] 
+> <small> ON USAGE AND COST</small>
+>
 > Opus produces better output on complex tasks, with the tradeoff of running slower. For most knowledge work, Sonnet handles the task well. Reserve Opus for work where the quality ceiling genuinely matters. Use Haiku where volume and speed are the primary requirements and the task has clear structure.
 > 
 > One additional dimension to keep in mind: on metered or usage-budgeted plans (including API access), this speed-versus-capability trade-off also becomes a per-call cost trade-off. A higher-capability tier such as Opus consumes more usage per call than Haiku or Sonnet, so on those plans "efficiency" means cost as well as speed. On the standard `Claude.ai` subscription surface, treat efficiency (speed and usage headroom) as the practical proxy for cost; the selection logic above does not change.
@@ -143,11 +157,13 @@ Different model tiers in the Claude family span a range from efficient-and-fast 
 
 ## Context Management: Context Limits, Conversation Hygiene & Memory Management
 
-_Model selection and capability configuration determine what Claude can do in a session. Context management determines how long it can do it well_. Every Claude conversation has a finite working-memory budget, and that budget runs down as the conversation grows. Deliberate context management keeps sessions coherent through long or complex work.
+<span style="font-size: 1.15em;">_Model selection and capability configuration determine what Claude can do in a session. Context management determines how long it can do it well._</span> 
+
+Every Claude conversation has a finite working-memory budget, and that budget runs down as the conversation grows. Deliberate context management keeps sessions coherent through long or complex work.
 
 ### The context window in practical terms
 
-Every conversation has a working-memory limit. As messages and uploaded documents accumulate, Claude's context window fills. As it fills toward the limit, `Claude.ai` automatically summarizes earlier messages to make room (on paid plans with Code Execution enabled), and the full history remains available for reference. In practical terms: a long session where you gave Claude detailed instructions in the first 10 minutes may produce responses 90 minutes later that don't follow those instructions, not because Claude is ignoring them, but because detail can compress when earlier context is summarized.
+Every conversation has a working-memory limit. As messages and uploaded documents accumulate, Claude's context window fills. As it fills toward the limit, `Claude.ai` automatically summarizes earlier messages to make room (_only_ on paid plans with Code Execution enabled), and the full history remains available for reference. In practical terms: a long session where you gave Claude detailed instructions in the first 10 minutes may produce responses 90 minutes later that don't follow those instructions, not because Claude is ignoring them, but because detail can compress when earlier context is summarized.
 
 Signs a conversation needs intervention:
 
@@ -174,13 +190,13 @@ Claude's usage limits operate on more than one time window: a short rolling sess
 ## Key Takeaways
 
 1. **Select the entry point before writing the prompt**
-    Chat handles one-off work. Projects handle recurring work with stable context. Artifacts handle deliverable outputs. Research handles tasks requiring current multi-source information. The entry-point decision shapes every subsequent choice in the session.
+    _Chat_ handles one-off work. _Projects_ handle recurring work with stable context. _Artifacts_ handle deliverable outputs. _Research_ handles tasks requiring current multi-source information. The entry-point decision shapes every subsequent choice in the session.
 2. **Four capability layers, four distinct problems**
-    Projects carry context. Skills define repeatable procedures. Code Execution verifies computations. Memory persists continuity. Use them independently or in combination based on what the task requires.
+    _Projects_ carry context. _Skills_ define repeatable procedures. _Code Execution_ verifies computations. _Memory_ persists continuity. Use them independently or in combination based on what the task requires.
 3. **Model tiers reflect a speed-capability trade-off**
-    Haiku handles structured, high-volume tasks efficiently. Sonnet covers most professional work. Opus handles complex, high-stakes tasks where quality outranks speed. Match the tier to what the task demands.
+    _Haiku_ handles structured, high-volume tasks efficiently. _Sonnet_ covers most professional work. _Opus_ handles complex, high-stakes tasks where quality outranks speed. _Fable_ sits above Opus for long-running agentic, large-scale coding, and multimodal research work, at a higher cost. Match the tier to what the task demands.
 4. **Context is a budget**
-    Long conversations degrade as context fills. Restart, summarize, or persist. Managing context deliberately is more efficient than working around drift after it has accumulated.
+    Long conversations degrade as context fills. _Restart_, _summarize_, or _persist_. Managing context deliberately is more efficient than working around drift after it has accumulated.
 5. **Variation is inherent; review is structural**
     Every Claude feature, including configured Skills, produces different outputs run to run. Module 3 builds the discipline to evaluate those outputs before they leave your hands. The framework from this module determines the right entry point and capability layer. The framework from Module 3 determines what to do with the output.
 
