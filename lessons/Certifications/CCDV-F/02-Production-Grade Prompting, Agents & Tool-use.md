@@ -1,3 +1,5 @@
+<link rel="stylesheet" href="./tabs.css">
+
 # Production-Grade Prompting, Agents & Tool-use
 
 <span style="font-size: 1.25em;">_Writing code that uses Claude is different from using Claude to write code._</span>
@@ -67,8 +69,6 @@ The table below shows how we can stack all the four techniques together, where t
 ### When to reach for each technique
 
 Now, let’s understand more about each of these techniques and when each one applies:
-
-<link rel="stylesheet" href="./tabs.css">
 
 <div class="jb-tabs-container">
 <input type="radio" class="jb-r1" name="jb-tab-group-1" id="g1-tab1" checked>
@@ -756,6 +756,677 @@ Once you have decided the task needs an agent, you have also decided on a patter
 
 There are three wiring paths, and they sit on a spectrum of how much infrastructure you own. You can write the loop directly against the Messages API, which gives you full control and full responsibility. You can use the Agent SDK, which runs the same loop inside your own process and hands you tool execution, context management, and the iteration structure already built. Or you can use Claude Managed Agents (currently in public beta), where Anthropic runs the loop and the sandbox and your application streams events in and results back. The sections that follow teach the loop itself, because the loop is what stays constant. The path you choose decides who maintains the parts around it.
 
-Wiring paths: who runs the loop, and what you take on
+### Wiring paths: who runs the loop, and what you take on
+
 The three paths differ in one variable: how much of the agent's runtime you own. The table is ordered from top to bottom by how much infrastructure you hand off. Choose based on your deployment and compliance constraints, don't be tempted to choose the path that is just fastest to prototype.
+
+<div class="jb-tabs-container">
+<input type="radio" class="jb-r1" name="jb-tab-group-2" id="g2-tab1" checked>
+<input type="radio" class="jb-r2" name="jb-tab-group-2" id="g2-tab2">
+<input type="radio" class="jb-r3" name="jb-tab-group-2" id="g2-tab3">
+
+<div class="jb-tabs-header">
+<label class="jb-tab-label jb-l1" for="g2-tab1">Raw Messages API Loop</label>
+<label class="jb-tab-label jb-l2" for="g2-tab2">Agent SDK</label>
+<label class="jb-tab-label jb-l3" for="g2-tab3">Claude Managed Agents</label>
+</div>
+
+<div class="jb-tab-content">
+
+<div class="jb-tab-panel jb-p1" id="g2-content1">
+<p><b>Who runs the loop:</b> Your code runs every iteration. You send the request, read the tool-use blocks, execute the tools, and append the results yourself.
+
+<b>What you own:</b> The full loop, tool execution, context management, retries, and exit conditions. Nothing is provided for you.
+
+<b>Choose this when:</b> You need full control over each step, you have constraints a library does not accommodate, or you are teaching yourself how the loop works before adding abstraction.
+
+<b>What to check before committing:</b> The maintenance cost is yours. Every behavior the SDK would give you for free, including context management and parallel tool handling, becomes code you write and test.</p>
+</div>
+
+<div class="jb-tab-panel jb-p2" id="g2-content2">
+<p><b>Who runs the loop:</b> The SDK runs the loop inside your own process. It iterates and manages context, and your code still executes the tools the agent calls.
+
+<b>What you own:</b> Tool execution and the surrounding application. The SDK provides the loop structure, context management, and tool registration.
+
+<b>Choose this when:</b> You want the loop, context handling, and tool scaffolding that power Claude Code without rebuilding them, and you want the agent running in your own environment in Python or TypeScript.
+
+<b>What to check before committing:</b> Whether filesystem-based features like CLAUDE.md and skills load in the Agent SDK is controlled by the settingSources configuration. Do not rely on a default: always set settingSources explicitly to the sources you intend (for example, ["user", "project", "local"] to match Claude Code CLI behavior, or [] to run fully isolated with only what you pass programmatically). Confirm current default behavior against the Agent SDK reference at build time.</p>
+</div>
+
+<div class="jb-tab-panel jb-p3" id="g2-content3">
+<p><b>Who runs the loop:</b> Anthropic runs the loop and the sandbox. Your application sends user events and streams results back over server-sent events.
+
+<b>What you own:</b> The application layer and the agent definition. You define the model, system prompt, tools, MCP servers, and skills once, then reference the agent by ID across sessions.
+
+Choose this when: You need long-running execution measured in minutes or hours, you want a managed sandbox, or you want to avoid building the loop, the sandbox, and the tool-execution layer at all. Also available on Claude Platform on AWS with some feature differences, verify capability parity against your deployment surface before committing.
+
+What to check before committing: Sessions are stateful and stored server-side, which means they are not currently eligible for Zero Data Retention or a HIPAA Business Associate Agreement. (See Anthropic API data retention documentation at platform.claude.com, verify at publish.)
+
+Currently in public beta, all endpoints require the managed-agents-2026-04-01 beta header and behaviors may be refined between releases. Build with a migration plan in place.</p>
+</div>
+
+</div>
+</div>
+
+### Claude Managed Agents: when to use
+
+The table above lists Managed Agents as the third path. Let's make that choice concrete because for some workloads it's the right default.
+
+Here's the core difference: with a raw loop or the Agent SDK, your code runs the iteration. You send each request, read the tool-use blocks, run the tools, and append the results. With Managed Agents, Anthropic runs the loop and the sandbox for you. Your application defines the agent once (model, system prompt, tools, MCP servers, skills), refers to it by ID, sends user events, and streams the results back over server-sent events.
+
+**What you stop owning, and what you take on instead**
+
+| Category | What you stop owning | What you take on instead |
+| :-- | :-- | :-- |
+| Execution & infrastructure | The iteration loop, the execution sandbox, the retries inside the loop, and the tool-execution runtime. Anthropic runs all of it server-side. | An agent definition managed as a versioned API resource, plus an application layer that sends events and consumes the streamed results. |
+| Session duration & state | Long-running execution management. Sessions can run for minutes or hours without your process holding the loop open. | Server-side session state. Sessions are stateful and stored by Anthropic, and are subject to its data handling policies and constraints (see the constraint note below). |
+| Sandbox lifecycle | Sandbox provisioning and teardown for tool execution. | A dependency on the managed sandbox's available tools and its execution model, rather than your own environment. |
+
+**Choose Managed Agents when**
+
+* **The task runs long**. Execution measured in minutes or hours is awkward to hold open in your own process, and the managed loop is built for exactly that.
+* **You want a managed sandbox**. If you'd otherwise be building and securing an execution environment for tool calls, using Managed Agents takes a large piece of infrastructure off your plate.
+* **You'd rather not build the loop, the sandbox, and the tool-execution layer at all**, and you're willing to define the agent as an API resource instead.
+
+> [!Caution]
+> <small>THE CONSTRAINT THAT DECIDES IT FOR REGULATED WORK</small>
+>
+> Managed Agent sessions are stateful and stored server-side. That storage is the reason these sessions aren't currently eligible for Zero Data Retention or a HIPAA Business Associate Agreement. So, if your workload carries PHI or falls under a ZDR requirement, this path is ruled out no matter how well it fits operationally, and you route to the Agent SDK or a raw loop on a covered configuration instead. The governing constraint picks the path before convenience gets a say.
+
+_A common progression is to prototype on the Agent SDK locally, then move to Managed Agents for production._ The core agent definition carries over conceptually. What changes is the format: the Agent SDK uses code-level and filesystem configuration, while Managed Agents defines the agent as a versioned API resource. Expect a re-expression step, not a direct export.
+
+> 
+> **Handles well**
+> Long-running agents, and workloads where you'd rather not build or secure a sandbox and loop yourself.
+>
+> **Adds cost or complexity**
+> Server-side stateful sessions, an agent-as-resource definition format, and a beta surface that can change between releases.
+>
+> **Use a different approach**
+> For PHI or ZDR workloads, or when you need full in-process control, stay on the Agent SDK or a raw loop on a covered configuration.
+
+### Wiring the loop: the four steps that hold across every path
+
+The four steps below define a working agent loop no matter which path you build on. When you write the loop against the Messages API, you implement all four yourself. When you use the Agent SDK, it provides the structure for registering tools, setting the system prompt, and iterating the loop, and your code still handles tool execution. The steps are the same; what differs is how much you write versus inherit.
+
+* **Register tools**: Each tool follows the same schema structure. The SDK registers them against the agent, so Claude knows what is available.
+* **Set the system prompt**: Scope it to the agent's task. A broad system prompt produces broader, less reliable tool routing. A system prompt that names the specific task and the tools available for it produces more consistent behavior.
+* **Handle the tool-use loop**: Whether you iterate the loop yourself or the SDK iterates it for you, your code handles execution. Every tool call Claude issues must be executed by your code and returned in a tool-result block.
+* **Define exit conditions**: The agent loop runs until it receives a stop condition. Without explicit exit conditions, the agent will continue requesting tool calls beyond what the task requires. You should define when done means done.
+
+### Loop wiring checklist: verify these regardless of path
+
+| # | Item | What to verify |
+| :-- | :-- | :-- |
+| 1 | Tools registered | Every tool the agent may need is in the registration list. No unregistered tools are referenced in the system prompt.|
+| 2 | System prompt scoped | The system prompt names the task and the available tools. It does not describe tools the agent does not have. It does not omit tools the agent does have that require scoping guidance. |
+| 3 | Tool-use loop implemented | Your code handles every tool-use block Claude issues and returns a tool-result block for each one before the next assistant turn. All tool-use blocks from a single assistant turn must be resolved together. |
+| 4 | HITL insertion point defined | At least one point in the loop has a human-in-the-loop check. See the section below for where to insert it. |
+| 5 | Exit conditions defined | The loop has a clear stopping criterion that does not depend on Claude volunteering to stop. |
+
+### Human-in-the-loop (HITL): Insertion points and when each applies
+
+A human-in-the-loop checkpoint pauses agent execution and routes to a human review step before proceeding. The question that determines where to insert one is: what is the worst possible outcome if this step runs without a human check?
+
+| Insertion point | What triggers the check | Risk level it addresses |
+| :-- | :-- | :-- |
+| Before a destructive tool call | The agent is about to execute a write, delete, or send operation. | High: irreversible actions where a wrong call cannot be undone |
+| After a planning step | The agent has generated a plan and is about to begin executing it. | Medium: incorrect plans that would produce the wrong outcome even if all steps execute correctly |
+| On unexpected output | The tool result contains an error flag, an empty result, or a value outside expected bounds. | Variable: catches failure modes that retry logic alone will not resolve |
+
+### Tool orchestration: Over-tooling and under-tooling
+
+The agent's routing behavior is shaped by two things, including how tools are described and how many tools are registered. Too many tools with overlapping descriptions produce erratic routing. Too few tools force the agent to either hallucinate a path or return an incomplete result.
+
+Over-tooling is the more common problem in production agents. Teams register every tool they might need "just in case" and discover that Claude's selection quality degrades as the tool surface grows. Start with the minimum set required for the task and add tools only when a specific gap in capability is confirmed.
+
+<table style="border-collapse: collapse; width: 100%; border: 1px solid #e0e0e0;">
+  <thead>
+    <tr>
+      <th style="background-color: #e2ede0; color: #5a8553; border: 1px solid #e0e0e0; padding: 16px; text-align: left; vertical-align: top; width: 33.33%;">
+        When agents are the right call
+      </th>
+      <th style="background-color: #f7ded3; color: #c45d3e; border: 1px solid #e0e0e0; padding: 16px; text-align: left; vertical-align: top; width: 33.33%;">
+        What you take on when you use an Agent
+      </th>
+      <th style="background-color: #f6d8d6; color: #b71c1c; border: 1px solid #e0e0e0; padding: 16px; text-align: left; vertical-align: top; width: 33.33%;">
+        When to choose a workflow instead
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border: 1px solid #e0e0e0; padding: 16px; vertical-align: top; line-height: 1.6;">
+        Goal-directed tasks where the exact path cannot be enumerated in advance. Handling variable inputs that would require dozens of conditional branches in a workflow.
+      </td>
+      <td style="border: 1px solid #e0e0e0; padding: 16px; vertical-align: top; line-height: 1.6;">
+        Agents add behavioral complexity: the path through the task emerges from the model's reasoning over accumulated context rather than from explicit branching logic in your code. Observability requires transcript-level tooling rather than standard operational logging.
+      </td>
+      <td style="border: 1px solid #e0e0e0; padding: 16px; vertical-align: top; line-height: 1.6;">
+        When you can enumerate the steps in code, use a workflow. Agents are the last step in progression. Start with the simplest pattern that solves the problem, a single API call, then a workflow, then an agent. And move up only when the simpler pattern cannot handle the variability the task requires.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+### Regulated data constraints set your delivery route and credentials before you write the wiring
+
+If your data needs to be handled with specific constraints (e.g., attorney-client privilege, HIPAA, GDPR, FedRAMP, or an internal data-residency policy), that constraint decides which endpoint your code calls, which credentials it carries, and where its logs land before you make a single design choice about prompts, tools, or memory.
+
+As a developer you usually do not pick the surface, but you do write the code that targets a specific endpoint, attaches credentials, configures the region, and emits logs. Get the governing constraint named at the start, because the wrong client configuration is much more expensive to undo after the agent is wired than to set correctly the first time. The five constraints below cover the cases you are most likely to hit in production.
+
+| Constraint | What it tends to rule out in code | What usually survives a code review |
+| :-- | :-- | :-- |
+| Attorney-client privilege | Calls from a consumer-grade Claude.ai surface that the firm cannot audit end-to-end. Code paths that send privileged document content to any endpoint the firm has not approved for privileged material, regardless of how the prompt or system message is structured. | Direct API or SDK calls from inside the firm's own application, authenticated via SSO, routed through a firm-approved LLM gateway with full request and response logging. Note that Anthropic's native Compliance Conversation content (prompts, responses, and tool call payloads) is not captured by Anthropic by default on direct API traffic, so the organization must implement conversation logging in the application layer and route it to an approved log destination. Tool calls and tool results stay inside the audited path. Confirm the final logging design with your Anthropic account team. |
+| HIPAA (PHI handling) | Code that sends Protected Health Information to any endpoint or delivery route not covered by a Business Associate Agreement for the specific configuration in use. This includes any logging or retention path your code writes to that has not been scoped under the same BAA. | Direct API or SDK calls on a BAA-covered configuration. BAA coverage for Anthropic first-party API access is arranged with Anthropic, which provisions a dedicated HIPAA-enabled organization that enforces feature restrictions on its own end. Confirm the covered configuration with your Anthropic account team. An alternative is a cloud-mediated route via AWS Bedrock or GCP Vertex on the partner's existing HIPAA-eligible cloud account. Note: the BAA does not cover Console, Workbench, beta features, or consumer plans. Not all API features are covered under the BAA, verify the current feature eligibility list in Anthropic's Implementation Guide before configuring. |
+| GDPR and data residency | Delivery routes where the region of model execution cannot be pinned in code, or where the request can be served from a region outside the approved geographic boundary. Defaulting to a global endpoint without specifying region is the common pattern that breaks here. | A cloud-mediated route such as Bedrock or Vertex, with the region pinned in the client configuration to a covered jurisdiction. The direct Anthropic API is a separate case; it does not currently provide EU data residency, so partners with EU data residency requirements should route through Bedrock or Vertex rather than calling the API directly. |
+| FedRAMP and government | Any code path that calls an endpoint not on an authorized cloud environment at the required impact level. This includes development and test paths that hit the commercial endpoint while production hits the authorized one, because credentials and code patterns leak between them. | Three authorized routes exist as of publish time. Claude for Government (C4G) carries a direct FedRAMP High authorization held through Palantir Federal Cloud Service – Supporting Services (PFCS-SS). Claude via Amazon Bedrock GovCloud is approved for FedRAMP High and DoD IL4/5 workloads. Claude via Vertex AI Assured Workloads is also FedRAMP authorized. Claude Enterprise on AWS Marketplace is not FedRAMP authorized, so teams requiring FedRAMP compliance must use one of the three routes above. Verify current authorization status at trust.anthropic.com before configuring. |
+| Internal data-residency policy | Calls from any SDK client configured against a cloud vendor outside the partner's approved list, regardless of whether the underlying technical capability would support the workload. Procurement-level constraints rule the code path out before engineering preferences enter the conversation. | The delivery route on the partner's approved cloud vendor. In code terms, that is whichever SDK client and endpoint configuration their CIO has already cleared. Build against that one rather than switching mid-project because another route looks easier. |
+
+This table covers the constraints that directly determine endpoint selection and credential configuration. SOC 2 is not in scope here. It governs how your systems are built and operated, not which endpoint your code calls, and is covered in Module 4 alongside other security posture and audit requirements.
+
+> [!Tip]
+> <small>FORWARD POINTER</small>
+>
+> Module 4 (Production Engineering, Evals & Security) goes deep on secure-by-design patterns for IAM and privacy, defenses against prompt injection from untrusted inputs, runtime guardrails, and agent hardening. The role of this section is narrower: surface the constraint at the point in the build where it actually rules options out, which is when you pick the endpoint, the SDK client configuration, and the credentials your agent carries into production.
+
+### The agent that edited a production file
+
+> [!Tip]
+> <small>SETUP</small>
+>
+> The agent works end-to-end in testing because your test environment is forgiving, but production is not. The agent has the same tools, the same loop, and the same system prompt, but the HITL checkpoint is missing because testing never surfaced a use case where it was needed.
+
+**A file-editing agent, tested in a scratch directory, deployed to a customer environment**
+
+A developer built an agent that could read, modify, and write configuration files. The system prompt gave it access to three tools, including read_file, write_file, and validate_config. The agent's loop was straightforward. After each write, it would re-run validate_config, and if the config still failed validation, the agent would adjust its edit and write again, up to a cap of ten iterations before stopping. The agent was tested against a scratch directory with a copy of the target config. It worked correctly on every test case, typically converging on a valid config in two or three iterations.
+
+When deployed to a customer environment, the agent correctly identified that a configuration parameter was out of range. It proposed a correction, called write_file, re-ran validate_config, and got back a pass. The loop terminated cleanly after a single iteration, exactly as designed. The ten-iteration cap was never reached because it was never needed. The loop design was correct, but the exit condition was the problem.
+
+The parameter the agent corrected was a rate limit that the customer's application relied on. validate_config checked that the value was within the schema's allowed range, which it now was. What validate_config did not check, and was never designed to check, was whether downstream systems depended on the old value. Within minutes of the write, the customer's application started failing because requests were being throttled at a rate it was not built to handle.
+
+The agent's loop did exactly what the developer asked it to do. It edited, validated, and exited when validation passed. The failure was not in the loop. The failure was that the loop's exit condition (validate_config returns pass) was scoped to the file the agent was editing, and there was no checkpoint between "validation passed on this file" and "write committed to the customer environment." The missing piece was a checkpoint in the loop design: before the first write_file call hit the live customer config, pause and surface the proposed change for human review. In practice this means the loop needs an explicit branch between 'proposed change ready' and 'write committed', a state the developer never added because tests never produced a case that required it.
+
+> [!Caution]
+> <small>WHAT TO WATCH OUT FOR</small>
+>
+> The pattern this incident illustrates is a permissions question that never got asked during design. The agent had write access because the task involved file editing, and the task itself was legitimate. What the team missed was the gap between an agent that proposes a change and one that commits it. In a disposable test environment, that gap never surfaces because nothing a "wrong write" touches matters in testing, but production is different.
+>
+> The design question that was never asked: "What is the worst outcome if write_file runs without a human check?" The answer to that question determines whether a human-in-the-loop checkpoint is required before the tool can execute.
+>
+> If a tool can take an irreversible action in production, it needs a checkpoint before it runs. Register that constraint during design, when you're scoping the tool surface, not after the first incident occurs.
+
+
+**Here is an example of an Agent implementation**
+
+```python
+"""Minimal customer-record agent using the Anthropic SDK.
+
+Run:
+    pip install anthropic
+    export ANTHROPIC_API_KEY="sk-ant-..."
+    python agent.py
+"""
+
+import json
+import os
+import sys
+from pathlib import Path
+from typing import Any
+
+import anthropic
+
+MODEL = "claude-haiku-4-5"
+MAX_ITERATIONS = 10  # Hard stop so a confused model cannot loop forever.
+DATA_FILE = Path("customers.json")
+
+# Only these fields can be changed. KYC status and credit limit are excluded.
+EDITABLE_FIELDS = {"email", "phone", "address"}
+
+SEED_DATA = {
+    "C1001": {
+        "customer_id": "C1001",
+        "name": "Priya Sharma",
+        "email": "priya.sharma@oldmail.in",
+        "phone": "+919820012345",
+        "address": "14 Linking Road, Bandra West, Mumbai 400050",
+        "kyc_status": "VERIFIED",
+        "credit_limit_inr": 150000,
+    }
+}
+
+TOOLS = [
+    {
+        "name": "read_record",
+        "description": "Use this to read a customer record by customer_id.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"customer_id": {"type": "string"}},
+            "required": ["customer_id"],
+        },
+    },
+    {
+        "name": "update_record",
+        "description": (
+            "Use this to update a specific field on a customer record. Only "
+            "call this tool after a read_record call has confirmed the current "
+            "value and the proposed change has been reviewed. Do not use this "
+            "for bulk updates or schema changes. Editable fields: email, "
+            "phone, address."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "customer_id": {"type": "string"},
+                "field": {"type": "string"},
+                "new_value": {"type": "string"},
+            },
+            "required": ["customer_id", "field", "new_value"],
+        },
+    },
+]
+
+
+def load_records() -> dict[str, Any]:
+    """Loads all customer records from the JSON file."""
+    return json.loads(DATA_FILE.read_text(encoding="utf-8"))
+
+
+def save_records(records: dict[str, Any]) -> None:
+    """Writes all customer records back to the JSON file."""
+    DATA_FILE.write_text(json.dumps(records, indent=2), encoding="utf-8")
+
+
+def read_record(customer_id: str) -> str:
+    """Returns one customer record as a JSON string.
+
+    Args:
+        customer_id: The customer identifier, for example "C1001".
+
+    Returns:
+        The record as JSON, or an error message if the ID is unknown.
+    """
+    record = load_records().get(customer_id)
+    if record is None:
+        return f"Error: no customer found with id {customer_id}."
+    return json.dumps(record)
+
+
+def update_record(customer_id: str, field: str, new_value: str) -> str:
+    """Updates one field on a customer record.
+
+    Args:
+        customer_id: The customer identifier.
+        field: The field to change. Must be in EDITABLE_FIELDS.
+        new_value: The replacement value.
+
+    Returns:
+        A confirmation or an error message.
+    """
+    if field not in EDITABLE_FIELDS:
+        return f"Error: '{field}' is not editable."
+    records = load_records()
+    if customer_id not in records:
+        return f"Error: no customer found with id {customer_id}."
+    old_value = records[customer_id][field]
+    records[customer_id][field] = new_value
+    save_records(records)
+    return f"Updated {field} for {customer_id}: '{old_value}' -> '{new_value}'."
+
+
+def run_tool(name: str, tool_input: dict[str, Any]) -> str:
+    """Dispatches a tool call by name.
+
+    Args:
+        name: Tool name requested by the model.
+        tool_input: Arguments supplied by the model.
+
+    Returns:
+        The tool result as text.
+    """
+    if name == "read_record":
+        return read_record(**tool_input)
+    if name == "update_record":
+        return update_record(**tool_input)
+    return f"Error: unknown tool '{name}'."
+
+
+def run_agent_loop(client: anthropic.Anthropic, user_request: str) -> str:
+    """Runs the tool-use loop until the model gives a final answer.
+
+    Args:
+        client: Configured Anthropic client.
+        user_request: The operator's natural-language request.
+
+    Returns:
+        The model's final text answer.
+
+    Raises:
+        RuntimeError: If the loop exceeds MAX_ITERATIONS or stops unexpectedly.
+    """
+    messages = [{"role": "user", "content": user_request}]
+    ids_read: set[str] = set()  # Enforces "read before update" in code.
+
+    for _ in range(MAX_ITERATIONS):
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=4096,
+            tools=TOOLS,
+            messages=messages,
+        )
+
+        if response.stop_reason == "end_turn":
+            return "".join(b.text for b in response.content if b.type == "text")
+
+        if response.stop_reason != "tool_use":
+            raise RuntimeError(f"Unexpected stop_reason: {response.stop_reason}")
+
+        # Echo the assistant turn back, then answer every tool call in it.
+        messages.append({"role": "assistant", "content": response.content})
+        tool_results = []
+
+        for block in response.content:
+            if block.type != "tool_use":
+                continue
+
+            result = None
+            if block.name == "read_record":
+                ids_read.add(block.input.get("customer_id", ""))
+
+            elif block.name == "update_record":
+                args = block.input
+                if args["customer_id"] not in ids_read:
+                    result = "Error: call read_record for this customer first."
+                elif args["field"] not in EDITABLE_FIELDS:
+                    result = f"Error: '{args['field']}' is not editable."
+                else:
+                    print(
+                        f"\nProposed update: {args['customer_id']}, "
+                        f"{args['field']} -> {args['new_value']}"
+                    )
+                    approval = input("Approve this update? (yes/no): ").strip().lower()
+                    if approval != "yes":
+                        result = "Update rejected by operator."
+
+            if result is None:  # No rule blocked the call, so run it.
+                result = run_tool(block.name, block.input)
+
+            tool_results.append(
+                {
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": result,
+                }
+            )
+
+        messages.append({"role": "user", "content": tool_results})
+
+    raise RuntimeError(f"Agent exceeded {MAX_ITERATIONS} iterations.")
+
+
+def main() -> int:
+    """Seeds demo data and runs the agent on a sample request.
+
+    Returns:
+        Process exit code.
+    """
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        print("Set ANTHROPIC_API_KEY before running.", file=sys.stderr)
+        return 1
+
+    if not DATA_FILE.exists():
+        save_records(SEED_DATA)
+
+    client = anthropic.Anthropic()  # Reads ANTHROPIC_API_KEY from the environment.
+    request = (
+        "Customer C1001 called in and said her email address is now "
+        "priya.sharma@newmail.in. Please update her record."
+    )
+    print(f"User request: {request}")
+
+    try:
+        print(f"\nAgent: {run_agent_loop(client, request)}")
+    except (anthropic.APIError, RuntimeError) as exc:
+        print(f"Failed: {exc}", file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+```
+
+## Agent Memory
+
+### Choosing the right scope for state that survives sessions
+
+<span style="font-size: 1.15em;">_The agent from the previous section runs correctly within a single session. What it cannot do is remember anything when that session ends. Memory scope is how you decide what the agent should know at the start of the next session, and how much it costs to carry that knowledge forward._</span>
+
+### Memory patterns and when each is right
+
+Beyond memory scope, the blueprint groups several agent design patterns under this objective, and you have already built each one earlier in this module. The tool-use loop, where the model calls a tool, reads the result, and continues, is the core pattern from the tool-use and agent-construction clusters. Multi-step task decomposition breaks a goal into ordered subtasks, and planning-and-execution separates deciding the plan from carrying it out, the same split the human-in-the-loop check after a planning step guards. Memory scope, covered next, is the pattern that decides what state survives once the loop ends.
+
+Memory scope sets what an agent knows when a new session starts. Making the wrong choice has two failure modes, and they pull in opposite directions:
+
+* Too much state in-context inflates every API call, because the model re-reads the full conversation on every turn and the bill scales with session length.
+* Too little state in-persistent storage strips the agent of memory across sessions, because anything not written down disappears the moment the conversation ends.
+
+| **Scope** | **What persists** | **Cost** | **When to use** | **What you lose** |
+| :-- | :-- | :-- | :-- | :-- |
+| In-context memory | State lives in the active conversation and survives turns within a single session. | Zero retrieval overhead; inflates token cost as conversation grows | Short sessions where all the state the agent needs fits inside the context window and nothing has to carry across restarts. | Everything once the session ends. A clear command or a new session wipes the state. |
+| External storage | State is written to a database and read back at session start or on demand. | Each database call adds retrieval latency, and you take on the engineering work of read and write logic. | State that has to survive across sessions, move between users, or be shared across multiple agent instances. | Nothing on the persistence side. The cost shows up as latency on every call and ongoing implementation complexity. |
+| Summarized memory | A condensed version of prior conversation is generated and injected at the start of the next session. | Lower token cost per session than replaying full history, but the summarization step drops detail that was in the original. | Long-running conversational agents where the full history would outgrow the context budget before the conversation is done. | Any detail the summarizer did not preserve. The agent only sees what the summarization prompt chose to keep. |
+| No persistent memory (stateless) | Nothing. Each session is independent. | No overhead at all, since there is nothing to retrieve or store. | Task-execution agents that finish and close out, or pipelines where every session is fully independent by design. | All prior context. If a follow-up depends on something from an earlier session, the agent has no way to reach it. |
+| | | | | |
+
+### Choosing a memory scope at agent design time
+
+The choice of how an agent remembers prior interactions belongs in the design phase, not the production refactor. An agent that helps the same user across multiple days needs to carry state between sessions, which means storing summaries or full history outside the model's context window so the next session can read them back. An agent that receives a single job, completes it, and closes it out has no prior session to recall, so it runs stateless.
+
+The default path looks reasonable at first. You store the full conversation history in the messages array, send it on every API call, and the prototype works. It keeps working for a while. The trouble starts further in, when token cost scales with every additional turn, latency climbs as the context window fills, and eventually a long session hits the hard limit and the agent stops responding. At that point, you need to refactor: pull conversation state out of the live context, put it in external storage, and add only what each turn needs. The refactor itself is mechanical, a few hundred lines of code and a database the team already has. What it costs is timing. The work happens under production pressure, usually with a deadline already in motion, and every hour spent restructuring memory is an hour not spent on whatever the agent is supposed to do next. Making the call during design phase is cheap, while doing it when it's time to refactor is more expensive.
+
+The content below outlines three memory approaches and the conditions where each fits, the overhead each carries, and the assumption that most often pushes teams toward the wrong choice.
+
+> **Handles well**
+> The memory scope matches the task at design time. Use external storage when the agent continues a thread across sessions. Use stateless when each job is self-contained. Use in-context when the session is short and does not need to survive a restart.
+>
+> **Adds cost or complexity**
+> External storage adds retrieval latency and the read/write logic that goes with it. Summarized memory depends on a well-specified summarizer prompt; without one, task-critical state gets dropped on every compression. Neither approach is free, so weigh the costs and choose wisely.
+> 
+> **Use a different approach**
+> Holding all state in-context on the assumption that the window will be large enough. Token cost grows with every additional turn because the full context is sent on each API call. Without caching or compaction, long sessions accumulate cost faster than teams expect when they only measure early turns. Measure actual session token usage against the window limit before committing.
+
+### Skills: reusable instruction sets that load on demand without inflating every session
+
+The memory scope table above covers how an agent carries state across sessions. There is a related but distinct problem: how you carry repeatable instructions across tasks without paying to inject them into every session. The pattern for that is a Skill, a reusable markdown file that teaches Claude how to handle a specific kind of task once. Claude loads the Skill automatically when a request matches its description. The instructions sit on disk until they are needed; they are not resident in every conversation.
+
+A Skill lives in a `SKILL.md` file inside an identified directory. The file has two parts: a frontmatter block with a name and a description, and the instructions below it. The description is the matching criterion. When you send a request, Claude reads the name and description of every available Skill, compares them against your message, and loads the full instructions only when there is a match. If the instructions are not relevant to the current request, they never enter the context window.
+
+This is the key contrast with the memory patterns in the table above. In-context memory is always present and grows with every turn. CLAUDE.md behavior depends on where you are running Claude Code. In the Claude Code CLI, a CLAUDE.md file loads into every session regardless of what task is running. In the Agent SDK, whether filesystem settings including CLAUDE.md load is controlled by the settingSources configuration. Do not rely on a default: set it explicitly to the sources you intend, and confirm current default behavior against the Agent SDK reference at build time. A Skill, by contrast, loads only when the task calls for it, in both environments. For instruction sets that apply to specific recurring tasks rather than to every session, Skills are a lower-overhead pattern than either alternative.
+
+**Skills vs. CLAUDE.md vs. in-context instructions: choosing the right pattern**
+
+| **Pattern** | **When it loads** | **Context cost** | **Best for** |
+| :-- | :-- | :-- | :-- |
+| Skill<br>(SKILL.md) | On demand when request matches skill's description | Low. Only the name and description load at startup; full content loads only on match | Task-specific expertise that should not inflate sessions where it is not needed. *Examples include domain-specific output formats, specialized review checklists, and workflows that apply to a subset of tasks rather than every interaction.* |
+| CLAUDE.md | Every session, unconditionally | Fixed overhead per session regardless of task | Always-on project standards that apply to everything. *Examples include coding conventions the team has standardized on, output format rules the project requires, and constraints that hold across all tasks in the codebase.* |
+| In-context instructions | Present for every turn within that session | Grows with session length; does not survive session end | Short sessions where the full history fits within the window and nothing needs to persist. *Examples include one-off exploratory work and tasks scoped to a single conversation.* |
+| | | | |
+
+**Current availability: Skills on the Messages API**
+
+Skills are available on the Messages API today, but the integration is in beta and the configuration is not the same as the Claude Code or Agent SDK paths. Two beta headers are required on the API request: code-execution-2025-08-25 and skills-2025-10-02. Skills invoked this way run inside the code execution container rather than in the calling application's environment, which has implications for what tools and filesystem access the Skill can rely on.
+
+Beta headers are versioned and change as features move toward general availability. Before building against this configuration in production, check the current Anthropic API documentation to confirm the header values, whether the feature has reached general availability, and whether the code execution container is still the runtime path.
+
+_**One important constraint:**_ subagents do not automatically inherit Skills from the parent session. When you delegate a task to a subagent, it starts with a clean context. Note that while Skills and conversation history do not carry over, subagents do inherit the permission context from the parent session; permission scope is not reset at delegation. If the subagent needs a Skill, you must explicitly list it in the subagent's configuration. This matters at agent design time: if you are wiring a subagent to perform a task that depends on specific instructions, those instructions need to be registered against the subagent, not assumed to carry over from the parent.
+
+### The agent that filled the window on session four
+
+> [!Tip]
+> <small>**SETUP**</small>
+>
+> The agent runs perfectly in development because you are running it in one long continuous session. The context window never fills, so in-context memory holds everything. But now, production runs multiple shorter sessions with more turns across more days, and the window fills at session four.
+
+**Postmortem: In-context state inflates until the window closes**
+
+An agent was built to assist a support engineer with ongoing escalation cases. Development ran continuous sessions of 10 to 15 turns. In-context state held the full history correctly. The developer shipped without measuring token usage per session.
+
+In production, each session was shorter, but the state accumulated across sessions. By session four, the injected in-context history exceeded 40,000 tokens before the agent had processed a single tool call. Combined with the system prompt and registered tool schemas, over 45,000 tokens of the context budget were consumed before the session's first productive turn. As tool calls accumulated across the session, the remaining budget was exhausted before the agent could complete its analysis. The agent began returning incomplete results, a symptom that initially looked like a tool selection failure rather than a memory architecture problem.
+
+The fix was a one-hour refactor to external storage: pull accumulated session history out of the live context, persist it to a database, and inject only the relevant subset at session start. The refactor under production pressure took significantly longer than it would have at design time. The storage layer, retrieval logic, and session management all needed decisions that should have been made before the first deployment.
+
+> [!Caution]
+> <small>**What to Watch Out for**</small>
+>
+> Development used a single long session. Production used many short sessions with accumulated state. Those are different shapes, and in-context memory handles them differently. Measure the expected state size per session (history plus system prompt plus tool schemas) against the context limit before choosing in-context as the default.
+
+**Choosing the Right Memory Pattern**
+
+Here are some exercises to choose the right memory pattern:
+
+![Question 1](images/mem_pattern1.png)
+
+![Question 2](images/mem_pattern2.png)
+
+![Question 3](images/mem_pattern3.png)
+
+## Multimodal and Batch Ingestion
+
+### Images, PDFs, and high-volume processing
+
+<span style="font-size: 1.15em;">_Up to now you've been managing what Claude remembers between turns. Multimodal ingestion shifts the question to what you're sending in: every image and PDF consumes context budget before Claude reads a single character of your prompt, which changes how you structure requests and what you can fit in one. The second half of this topic deals with the opposite end of the same problem. When you have thousands of inputs to process, sending one request at a time and waiting for each response stops making sense, and the Batch API is how you handle that volume without blocking your application._</span>
+
+### Image token cost: Calculate before you commit
+
+**Images are not free in terms of context budget**. Claude views images in patches: each 28×28-pixel block of the image is one visual token, so **an image costs ⌈width / 28⌉ × ⌈height / 28⌉ visual tokens**. A 1,000 × 1,000 pixel image is ⌈1000/28⌉ × ⌈1000/28⌉ = 36 × 36 patches, about 1,296 visual tokens. At that rate, ten high-resolution screenshots consume as much context as a detailed system prompt. Each model also has a maximum native image resolution, expressed as a long-edge limit and a visual-token limit, and these limits differ by model tier. The newest models accept substantially larger images than the standard tier. Images larger than either limit are downscaled before processing, so the formula runs on the scaled dimensions. Confirm the current per-tier limits against the Vision page (Resolution and token cost) at build time; the limits have changed between model generations and will again.
+
+The calculation matters at design time. If you are building a pipeline that processes images, measure the token cost of a typical production image against your model's context limit before you write the ingestion code. The fix for an over-budget pipeline is often a ten-minute image resize step. If you discover this after deployment, it takes even longer.
+
+### Different ways to send an image: When each is right
+
+<div class="jb-tabs-container">
+<input type="radio" class="jb-r1" name="jb-tab-group-3" id="g3-tab1" checked>
+<input type="radio" class="jb-r2" name="jb-tab-group-3" id="g3-tab2">
+<input type="radio" class="jb-r3" name="jb-tab-group-3" id="g3-tab3">
+
+<div class="jb-tabs-header">
+<label class="jb-tab-label jb-l1" for="g3-tab1">Inline base64</label>
+<label class="jb-tab-label jb-l2" for="g3-tab2">URL Reference</label>
+<label class="jb-tab-label jb-l3" for="g3-tab3">Files API</label>
+</div>
+
+<div class="jb-tab-content">
+
+<div class="jb-tab-panel jb-p1" id="g3-content1">
+<p>
+<b>How it works:</b> Encode the image bytes as a base64 string and include the data directly in the message block.
+
+<b>Overhead:</b> The full encoded payload travels with every request, which inflates request size and counts against latency on large images.
+
+<b>When to use:</b> Best for one-off images where adding an upload step would add complexity without a payoff. The same image sent repeatedly multiplies the cost, so reach for a different method if reuse is likely.
+</p>
+</div>
+
+<div class="jb-tab-panel jb-p2" id="g3-content2">
+<p>
+<b>How it works:</b> Pass a publicly reachable URL in the source block, and Claude fetches the image at request time.
+
+<b>Overhead:</b> No payload travels with the request, but you take on the dependency that the URL must be stable, public, and reachable at the moment Claude tries to fetch it.
+
+<b>When to use:</b> Best when the image is already hosted at a stable public URL you control. Skip it for anything behind auth, anything signed with a short expiry, or anything you can't guarantee will be reachable when the request runs.
+</p>
+</div>
+
+<div class="jb-tab-panel jb-p3" id="g3-content3">
+<p>
+<b>How it works:</b> Upload the file once through a separate API call, receive a file_id, and reference that ID in any future message.
+
+<b>Overhead:</b> The upload is a one-time cost; every later request carries the ID instead of the bytes, so payload overhead drops to near-zero from that point on. Currently in beta and not available on Bedrock or Vertex AI; verify availability for your deployment platform.
+
+<b>When to use:</b> Best when the same image or PDF appears across multiple requests, or when the asset is large enough that re-sending it would dominate request size. Also, the cleanest choice when you want asset management to live separately from inference calls, and the right choice for images that appear across multiple conversation turns, since the file_id carries no payload weight as history grows.
+</p>
+</div>
+
+</div>
+</div>
+
+### Sending PDFs: The document block
+
+For PDFs, the block type is document rather than image. The source structure follows the same pattern as images, which means it can be base64, a URL, or a Files API file_id. There is no required name field on a document block. The block accepts an optional title field for a readable document name, and an optional context field for additional metadata, but neither is required to send a PDF. All other mechanics, including token cost considerations and Files API reuse, apply in the same way.
+
+```json
+{
+  "type": "document",
+  "source": {
+    "type": "base64",
+    "media_type": "application/pdf",
+    "data": "<base64-encoded-pdf-bytes>"
+  },
+  "title": "contract_review.pdf"
+}
+```
+
+Applying prompting techniques to multimodal inputs
+The same prompting techniques from the first section apply to image and PDF analysis. A bare "describe this image" prompt produces shallow output for the same reason a bare text prompt does as Claude has no target structure to aim for.
+
+The difference is that images carry ambiguity that text cannot, which includes overlapping objects, depth and spatial relationships, and partial occlusion. A prompt for visual analysis should name how Claude should handle each type of ambiguity. "If objects overlap, describe each separately and note the overlap" is a concrete constraint that a text-only prompt would never need.
+
+### The Message Batches API: High-volume asynchronous processing
+
+When you need to run the same prompt pattern against hundreds or thousands of inputs, the synchronous API is the wrong model. Each synchronous call blocks until complete. At scale, that means your application is either burning threads or running thousands of concurrent connections against rate limits.
+
+The Message Batches API accepts up to 100,000 or 256 MB requests (whichever comes first) in a single batch call. You submit the batch, receive a batch_id, and poll for completion. When the batch finishes, you download the results. The per-token cost for batch requests is lower than for synchronous ones.
+
+The tradeoff is latency: batch processing is non-deterministic and can take up to 24 hours, often much faster. The pattern suits offline pipelines, evaluation runs, and data processing jobs, not real-time user interactions.
+
+| **Use case** | **Right API pattern** | **Why** |
+| :-- | :-- | :-- |
+| A user uploads a photo and expects an immediate classification | Synchronous API | Real-time response is required. Batch latency is unacceptable for interactive use. |
+| A nightly pipeline classifies 5,000 customer records | Message Batches API | Latency is not a constraint. Batch cost reduction and asynchronous processing are both valuable. |
+| An evaluation run tests a new prompt against 2,000 examples | Message Batches API | Offline task with no real-time requirement. Batch is the correct pattern. |
+| A chatbot generates a reply to a user's message | Synchronous API | User is waiting; batch would introduce unacceptable delay. |
+| | | |
+
+### When multimodal and batch fit together, and when they don't
+
+The combination works for offline workloads that reuse the same assets and need structured output across thousands of inputs. A nightly pipeline classifying images against a fixed taxonomy is the textbook case: Files API removes redundant uploads, Batches API absorbs the latency, structured-output techniques keep results machine-readable.
+
+Two failure modes break the fit.
+
+* The first is misreading latency: reaching for batch in any user-facing flow with an image produces a system that passes tests and fails in production, because the user is waiting and the batch isn't.
+* The second is underestimating context cost: images and PDFs consume budget before Claude processes any text, so pipelines loading multiple large images per request blow past token limits at scale. Measure token cost on production-scale inputs before you build.
+
+### The batch job that was not actually a batch
+
+> [!Tip]
+> Setup
+>
+> Splitting a job into chunks and processing them one after another is not batching; it is serialization with extra steps. The Message Batches API exists for high-volume workloads precisely because looping over inputs against the synchronous API runs into rate limits the moment the volume gets real, no matter how you slice the input list.
+
+**An internal channel conversation about a nightly job that kept hitting rate limits**
+
+A developer has been re-running the same nightly classification job for three nights and keeps hitting rate-limit errors at around the same point each time. The senior developer asks one question that surfaces the actual problem.
+
+> Developer: "My nightly job keeps hitting rate limits. I've already split it into smaller chunks. What else can I do?"
+> 
+> Senior Developer: "How are you submitting them?"
+> 
+> Developer: "I'm looping over the list and calling the API for each item."
+> 
+> Senior Developer: "That is not batching. That is serial calls against the synchronous endpoint. Splitting the list into chunks does not change what the API sees: it still sees one request per item, back to back."
+> 
+> Developer: "So the rate limit is firing because I am making thousands of synchronous calls?"
+> 
+> Senior Developer: "Right. The Message Batch API takes up to 100,000 requests or 256 MB per batch in a single batch call, returns a batch_id, and processes them asynchronously. You poll for completion, which means your code repeatedly checks the status of the batch on a schedule until the API tells you it's done. The per-token cost is lower than synchronous, and the rate limit does not fire because you are not making thousands of individual requests."
+> 
+> Developer: "And the tradeoff?"
+> 
+> Senior Developer: "Latency is non-deterministic. Batch processing can take hours. If this were a real-time user interaction, it would be the wrong tool. However, this is perfect for a nightly classification run."
+
+> [!Caution]
+> What to Watch Out for
+>
+> Chunking a list and looping over the synchronous API is not batching, even though it feels like it should be. It produces the same number of API calls as the un-chunked version and runs into the same rate limits. The Message Batches API is a different submission model, not a smaller batch size. Use it whenever the workload is high-volume and offline and reach for the synchronous API only when a user is waiting on the other end. Results return in arbitrary order, not the order requests were submitted in. Use the custom_id field on each request to match results back to inputs.
+
 
