@@ -17,26 +17,24 @@ This is the asymmetry at the center of professional AI use: the time saved is sm
 
 Two competencies from the AI Fluency Framework anchor the module. _Discernment_ is the skill of critically evaluating output against requirements, sources, and standards. _Diligence_ is deciding when verification is required and taking responsibility for the result. Discernment is how you review; Diligence is why you must.
 
-> **NOTE**
->
-> You are accountable for everything you ship, created with Claude's help. Learn to evaluate output systematically, recognize the failure patterns, build verification into your prompts, know the thresholds where human review is mandatory, and choose the output format that matches the reliability the task demands.
-> <br/><br/>
+> [!Important]
+> **You are accountable for everything you ship**, created with Claude's help or otherwise. Learn to evaluate output systematically, recognize the failure patterns, build verification into your prompts, know the thresholds where human review is mandatory, and choose the output format that matches the reliability the task demands.
 
 ## Discernment: Evaluating Accuracy, Completeness, and Fitness
 
 _Evaluation is not a feeling about whether output looks good_. It is a **check against three fixed references**: the `requirements` you set, the `source material`, and the `professional standards` of your field. The discernment protocol is running that check the same way every time, so quality does not depend on how rushed you happen to be.
 
-### Three evaluation references
+### Three evaluation references (R S P)
 
-**Requirements.** Does the output reflect what you asked for? Re-read your own request and confirm each part is addressed, not just the easy parts.
+**`R`equirements.** Does the output reflect what you asked for? Re-read your own request and confirm each part is addressed, not just the easy parts.
 
-**Source material.** Where the output relies on documents you supplied, does it match them? Trace specific claims back to the source rather than trusting that Claude read carefully.
+**`S`ource Material.** Where the output relies on documents you supplied, does it match them? Trace specific claims back to the source rather than trusting that Claude read carefully.
 
-**Professional standards.** Would this pass in your field? A number without units, a recommendation without reasoning, a citation you cannot locate. These fail professional standards even when they read fluently.
+**`P`rofessional Standards.** Would this pass in your field? A number without units, a recommendation without reasoning, a citation you cannot locate. These fail professional standards even when they read fluently.
 
 ### Stakes calibration
 
-How deeply you review depends on the stakes, and the stakes are domain-dependent, not universal. In zero-tolerance work (legal analysis, financial figures, compliance reporting), accuracy outranks speed entirely, and every claim gets verified. In low-stakes internal brainstorming, a lighter review is appropriate. The risk is applying the same casual review to both. Determine the stakes before you decide the depth of review.
+How deeply you review depends on the stakes, and the stakes are domain-dependent, not universal. In zero-tolerance work (legal analysis, financial figures, compliance reporting), accuracy outranks speed entirely, and every claim gets verified. In low-stakes internal brainstorming, a lighter review is appropriate. **The risk is applying the same casual review to both**. Determine the stakes before you decide the depth of review.
 
 ### A three-way triage
 
@@ -56,11 +54,11 @@ Accuracy asks whether what is present is correct. Completeness asks whether anyt
 
 The protocol is most effective on outputs that are not obviously good or bad. Here it is applied to three, each a different verdict.
 
-**Output 1: a competitor-pricing summary.** You asked Claude to summarize three competitors' published pricing from PDFs you uploaded. The summary is clean and well-organized. Running the three references: requirements met (it covers all three competitors), but the source review fails: one price is listed as "$40/user" when the uploaded PDF says "$40/user, minimum 10 seats." The omission changes the comparison. Verdict: needs revision. The fix is a source-restricted re-prompt, not a rewrite.
+**Output 1 - a competitor-pricing summary:** You asked Claude to summarize three competitors' published pricing from PDFs you uploaded. The summary is clean and well-organized. Running the three references: requirements met (it covers all three competitors), but the source review fails: one price is listed as **"$40/user"** when the uploaded PDF says **"$40/user, _minimum 10 seats._"** The omission changes the comparison. **Verdict**: needs revision. The fix is a source-restricted re-prompt, not a rewrite.
 
-**Output 2: an internal process recommendation.** You asked for three options to reduce invoice-processing time. The output gives three sensible options with trade-offs. Requirements met, no sources to check against, professional standards cleared, low stakes (internal discussion starter). Verdict: ready to use. Over-verifying this one wastes the time the tool saved.
+**Output 2 - an internal process recommendation:** You asked for three options to reduce invoice-processing time. The output gives three sensible options with trade-offs. Requirements met, no sources to check against, professional standards cleared, low stakes (internal discussion starter). **Verdict**: ready to use. Over-verifying this one wastes the time the tool saved.
 
-**Output 3: a compliance-gap analysis.** You asked Claude to compare your data-handling policy against a regulation and flag gaps. It flags four gaps confidently. Requirements appear met, but the regulation was not uploaded, so Claude worked from training-data recall of a rule that may have changed, and the stakes are regulatory. Verdict: needs human override. The output is a useful prompt for a compliance expert, not a substitute for one.
+**Output 3 - a compliance-gap analysis:** You asked Claude to compare your data-handling policy against a regulation and flag gaps. It flags four gaps confidently. Requirements appear met, but the regulation was not uploaded, so Claude worked from training-data recall of a rule that may have changed, and the stakes are regulatory. **Verdict**: needs human override. The output is a useful prompt for a compliance expert, not a substitute for one.
 
 Same protocol, three verdicts. The difference is never how polished the output looks; it is what the three references and the stakes return.
 
@@ -72,12 +70,12 @@ Knowing the specific signatures of failure lets you spot them quickly instead of
 
 ###  Hallucination patterns
 
-> [!NOTE]
-> **Plausible-but-unsupported claims.** A statement that sounds reasonable and fits the topic, with no basis in the source or in fact. The most dangerous kind, because nothing about it looks wrong.
+> [!Important]
+> **Plausible-but-unsupported claims:** A statement that sounds reasonable and fits the topic, with no basis in the source or in fact. The most dangerous kind, because nothing about it looks wrong.
 >
-> **Fabricated specifics.** Invented statistics, dates, names, quotations, or citations. Specificity reads as authority, which is exactly why fabricated specifics are persuasive.
+> **Fabricated specifics:** Invented statistics, dates, names, quotations, or citations. Specificity reads as authority, which is exactly why fabricated specifics are persuasive.
 >
-> **Confident tone masking uncertainty.** Claude rarely hedges in proportion to its actual certainty. A guess and a well-grounded fact arrive in the same assured voice.
+> **Confident tone masking uncertainty:** Claude rarely hedges in proportion to its actual certainty. A guess and a well-grounded fact arrive in the same assured voice.
 
 ### Inconsistencies and bias
 
@@ -87,12 +85,12 @@ Knowing the specific signatures of failure lets you spot them quickly instead of
 > **Confirmation bias in framing.** If your prompt implies a preferred answer, Claude may lean toward it. Watch for output that agrees with you a little too readily on a question that should be genuinely open.
 
 > [!TIP]
-> <small>A COMPLETENESS FAILURE WORTH REMEMBERING</small>
+> <small>**A COMPLETENESS FAILURE WORTH REMEMBERING**</small>
 >
 > A common, anonymized field pattern: a professional asks Claude to compare a batch of documents and identify the differences. The output lists several differences and reads as thorough. It missed differences in the single most important file in the batch. Completeness failures concentrate where attention is lowest, and a confident summary of the easy files can mask silence on the hard one.
 
 > [!TIP]
-> <small>CAPABILITY HALLUCINATION</small>
+> <small>**CAPABILITY HALLUCINATION**</small>
 >
 > Claude can claim to have taken an action it cannot actually take, such as `"I've emailed that to your team"` or `"I've saved the file."` Within `claude.ai`, Claude works with the conversation, connected tools, and uploaded files; it does not perform external actions it was not given a tool for. Treat any claimed external action as unverified until you confirm it happened.
 
@@ -101,23 +99,26 @@ Knowing the specific signatures of failure lets you spot them quickly instead of
 Each pattern below is shown the way it can actually appear, so you recognize the signature rather than the label.
 
 > [!Note]
-> <small>FABRICATED SPECIFIC, IN THE WILD</small>
+> <small>**FABRICATED SPECIFIC, IN THE WILD**</small>
 >
-> Prompt: "What share of mid-market SaaS firms adopted AI tools in 2025?" Output: "Approximately 63 percent of mid-market SaaS firms adopted at least one AI tool in 2025, up from 41 percent in 2024."<br/>
+> **Prompt**: "What share of mid-market SaaS firms adopted AI tools in 2025?" **Output**: "Approximately 63% of mid-market SaaS firms adopted at least one AI tool in 2025, up from 41% in 2024."
+>
 > The numbers are precise, the trend is plausible, and there is no source. The precision is the tell. Real figures this specific come with a citation; an uncited 63 percent is a number-shaped guess.
 
 > [!Note]
-> <small>CONFIDENT TONE MASKING UNCERTAINTY</small>
+> <small>**CONFIDENT TONE MASKING UNCERTAINTY**</small>
 >
-> Prompt: "Is this clause enforceable in our state?" Output: a four-sentence answer stating it is enforceable, in the same assured voice Claude uses for arithmetic.<br/> Legal enforceability is jurisdiction-specific and date-sensitive, exactly the kind of claim that should hedge and does not. Assurance is not evidence.
+> **Prompt**: "Is this clause enforceable in our state?" **Output**: a four-sentence answer stating it is enforceable, in the same assured voice Claude uses for arithmetic.
+>
+> Legal enforceability is jurisdiction-specific and date-sensitive, exactly the kind of claim that should hedge and does not. Assurance is not evidence.
 
 > [!Note]
-> <small>INTERNAL CONTRADICTION ACROSS A LONG OUTPUT</small>
+> <small>**INTERNAL CONTRADICTION ACROSS A LONG OUTPUT**</small>
 >
 > In a ten-page market analysis, page two states the addressable market is "roughly $2 billion" and page eight builds a projection on "the $2.6 billion market." Both read fine in isolation. The contradiction only becomes visible if you hold the whole document in view, which is why long outputs need a consistency pass, not just a paragraph-by-paragraph read.
 
 > [!TIP]
-> <small>HOW TO READ THE GALLERY</small>
+> <small>**HOW TO READ THE GALLERY**</small>
 >
 > None of these outputs looks broken. That is the point of the lesson: the failure modes are designed, by the nature of fluent generation, to pass a casual read. You catch them by knowing the signatures and checking against sources, not by waiting for something to look wrong.
 
@@ -205,14 +206,14 @@ Decide these in advance and treat them as fixed:
 
 Productive iteration improves the output each round. When rounds stop improving it, you have diminishing returns, and the right move is not another prompt; it is a human expert. Recognizing that line is part of Diligence: more prompting cannot manufacture judgment the situation requires.
 
-> [!Tip]
-> <small>OWNING THE OUTPUT</small>
+> [!Important]
+> <small>**OWNING THE OUTPUT**</small>
 >
 > The accountability does not transfer to the tool. Work produced with Claude is your work when you ship it, and the professional standard is the same as if you had produced it unaided. Diligence is the habit of acting as though that is true, because it is.
 
 ### Three escalation scenarios
 
-**The fast "yes."** Claude drafts an internal meeting agenda. Low stakes, reversible, internal audience, no regulatory exposure. All four thresholds say ship. No escalation; this is the routine case you can move quickly on.
+**The fast "yes."** Claude drafts an internal meeting agenda. _Low stakes, reversible, internal audience, no regulatory exposure_. All four thresholds say ship. No escalation; this is the routine case you can move quickly on.
 
 **The deceptive "looks fine."** Claude produces a board-deck financial summary that reads cleanly. The stakes are high, there's an executive audience, and the result will be partly irreversible once presented, tripping three of the risk thresholds. The clean appearance is irrelevant; this goes to a human reviewer and the figures get recomputed with code execution.
 
