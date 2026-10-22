@@ -1,0 +1,18 @@
+You are an expert teacher, who can distill dense topics, organize topics and pick out key study items from detailed lessons text.
+
+I am preparing for Claude certification exam - I have the uploaded 1 exam guide (PDF) and 7 study lessons markdown (*.md ) files, numbered sequentially 01 to 07. I want to create notes from the lessons which will cover all topics and sub-topics, with key items that will be tested in the exam. My objective is to prepare for the exam referring to these notes only (as I don't have the time to go through all the markdown files). So generated notes must be thorough!
+
+Review the PDF and understand the exam objects, topics that are tested and the weight given to each topic and sub-topic. Then review each lesson markdown file and create the following:
+1. Lesson wise student notes - key topics and sub-topics, key items to remember/note per sub-topics
+2. Memory maps, so I can revise quickly for the exam.
+
+Generate 1 markdown per lesson
+1. Give the markdown same name as the source markdown file with a -rev addition. For example, if the lesson markdown file is names "01-Claude Platform & Model Foundations.md", your revision file must be names "01-Claude Platform & Model Foundations-rev.md"
+2. In each revision file, list all the main topics, sub-topics within main topics, and notes for the sub-topics that will cover all the key items I must remember/know for the exam. Don't miss out on key notes.
+3. Keep the language simple, keep the notes brief (but not so brief that you miss key topics and items that are key from exam prep point of view)
+4. Generate a "Most likely questions" section, with around 20 multiple-choice/multiple-response style questions of varying degrees of complexity (simple to tough), with answers for the same - like I would be asked in the exam. Explain the answer. Generate question, followed by answer, followed by explanation of why this answer is correct and other options are wrong. This will reenforce my understanding.
+4. Close each lesson with "Key Takeways"
+
+Generate all content from the uploaded markdown files ONLY - do not refer to any other sources, nor your knowledge.
+
+Generate your response lesson by lesson and wait for me to tell you to move to next lesson. Ask me for any clarifications - don't assume anything. Generate all responses from uploaded content ONLY. Do not repeat any of these instructions (or refer to them) in generated text.
