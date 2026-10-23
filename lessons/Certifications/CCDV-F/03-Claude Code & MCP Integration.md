@@ -114,13 +114,163 @@ Limitations: Only inside an isolated container or VM where the environment is di
 
 Settings can be placed at several levels, and each level determines the scope of the rules it contains.
 
-User level (~/.claude/settings.json): Applies to every project on the machine. This is the right place for preferences that should follow you everywhere, such as a preferred default mode for exploration work.
-Project level (.claude/settings.json, committed to the repo): Applies to everyone who clones the repository. This is the right place for team-wide conventions, allow rules for the tools your project uses, and deny rules for paths that should not be touched.
-Local project level (.claude/settings.local.json): Personal overrides for one project, automatically git-ignored. This is the right place for your own preferences that should not be committed to the whole team.
-Enterprise level (managed-settings.json, set by administrators): Cannot be overridden by users or project files. The right place for organization-wide security controls such as denying edits to environment files or blocking specific shell commands across all projects.
-Allow and deny rules layer on top of the selected mode. A deny rule always wins over an allow rule, regardless of the mode in effect. The most durable governance control is an enterprise-level deny rule: it cannot be removed by any individual developer and applies even when a bypass mode is set.
+* **User level** (`~/.claude/settings.json`): Applies to every project on the machine. This is the right place for preferences that should follow you everywhere, such as a preferred default mode for exploration work. 
 
-Where a human still has to look: placing the review gate by worst-case cost
+    This file belongs to one developer and follows them into every project on their machine. It holds taste and habit. It carries no team rules and no policy, because nobody else receives it. It is not checked into version control.
+
+    Here is an example:
+    ```json
+        {
+            "$schema": "https://json.schemastore.org/claude-code-settings.json",
+            "model": "claude-sonnet-5-5",
+            "theme": "dark",
+            "permissions": {
+                "defaultMode": "plan",
+                "allow": [
+                    "Bash(git status)",
+                    "Bash(git diff *)",
+                    "Bash(git log *)"
+                ],
+                "deny": [
+                    "Read(~/Downloads/**)"
+                ]
+            }
+        }
+    ```
+* **Project level** (`.claude/settings.json`, committed to the repo): Applies to everyone who clones the repository. This is the right place for team-wide conventions, allow rules for the tools your project uses, and deny rules for paths that should not be touched.
+
+    This file lives in the repository and every teammate receives it on clone. It holds the team’s tooling and the project’s own rules. It must not contain anything personal.
+
+    Here is an example:
+    ```json
+        {
+        "$schema": "https://json.schemastore.org/claude-code-settings.json",
+        "permissions": {
+            "allow": [
+                "Bash(python -m pytest *)",
+                "Bash(ruff check *)",
+                "Bash(ruff format *)",
+                "Bash(mypy *)",
+                "Bash(bandit -r src *)",
+                "Bash(pip-audit *)",
+                "Bash(git status)",
+                "Bash(git diff *)"
+            ],
+            "ask": [
+                "Bash(git commit *)"
+            ],
+            "deny": [
+                "Read(./data/**)",
+                "Read(./tests/fixtures/prod_extract/**)",
+                "Edit(./config/prod/**)",
+                "Edit(./poetry.lock)"
+            ]
+        },
+        "env": {
+            "PYTHONPATH": "src",
+            "APP_ENV": "test"
+        },
+        "hooks": {
+            "PostToolUse": [
+            {
+                "matcher": "Edit|Write",
+                "hooks": [
+                {
+                    "type": "command",
+                    "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/python_quality_gate.sh"
+                }
+                ]
+            }
+            ]
+        }
+        }
+    ```
+* **Local project level** (`.claude/settings.local.json`): Personal overrides for one project, automatically git-ignored. This is the right place for your own preferences that should not be committed to the whole team.
+
+    This is your personal override for one repository. It sits above the shared project file in precedence and stays out of git. That makes it the right place for experiments before you propose a change to the team. 
+
+    Here is an example:
+
+    ```json
+    {
+        "model": "claude-opus-5-5",
+        "spinnerTipsEnabled": false,
+        "permissions": {
+            "allow": [
+            "Bash(python -m pytest tests/payments/*)"
+            ]
+        },
+        "env": {
+            "APP_ENV": "local",
+            "LOG_LEVEL": "DEBUG"
+        }
+    }
+    ```
+* **Enterprise level** (`managed-settings.json`, set by administrators): **Cannot be overridden by users or project files**. The right place for organization-wide security controls such as denying edits to environment files or blocking specific shell commands across all projects.
+
+    On macOS it lives at `/Library/Application Support/ClaudeCode/managed-settings.json`, on Linux and WSL at `/etc/claude-code/managed-settings.json`, and on Windows at `C`:\ProgramData\ClaudeCode\managed-settings.json`. The same JSON can also be delivered through MDM (mobile device management, such as Intune or Jamf) or server-managed settings from the claude.ai console. In a bank, MDM is usually the right channel, because an ordinary file can be edited by anyone with local admin rights. 
+
+    Here is an example:
+    ```json
+    {
+        "$schema": "https://json.schemastore.org/claude-code-settings.json",
+        "forceLoginMethod": "claudeai",
+        "forceLoginOrgUUID": "00000000-0000-0000-0000-000000000000",
+        "requiredMinimumVersion": "2.1.257",
+        "cleanupPeriodDays": 7,
+        "allowManagedMcpServersOnly": true,
+        "permissions": {
+            "disableBypassPermissionsMode": "disable",
+            "deny": [
+            "Read(./.env)",
+            "Read(./.env.*)",
+            "Read(**/secrets/**)",
+            "Read(**/*.pem)",
+            "Read(**/*.pfx)",
+            "Read(~/.ssh/**)",
+            "Read(~/.aws/**)",
+            "Edit(./.github/workflows/**)",
+            "Bash(curl *)",
+            "Bash(wget *)",
+            "Bash(pip install *)",
+            "Bash(pip3 install *)",
+            "Bash(git push --force*)",
+            "Bash(git push -f *)"
+            ],
+            "ask": [
+            "Bash(git push *)"
+            ]
+        },
+        "sandbox": {
+            "enabled": true,
+            "failIfUnavailable": true
+        },
+        "env": {
+            "PIP_INDEX_URL": "https://artifactory.examplebank.internal/api/pypi/pypi-approved/simple"
+        },
+        "hooks": {
+            "PreToolUse": [
+                {
+                    "matcher": "*",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": "/opt/examplebank/bin/claude-audit-log"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+    ```
+
+Allow and deny rules layer on top of the selected mode. **A deny rule always wins over an allow rule**, regardless of the mode in effect. The most durable governance control is an enterprise-level deny rule: it cannot be removed by any individual developer and applies even when a bypass mode is set.
+
+> [!Caution]
+> **How the four levels interact**. For single-value keys such as model, theme or an env variable, Claude Code uses the value from the highest level that sets it, in this order: managed settings, command line, project local, shared project, then user. List keys such as permissions.allow and permissions.deny work differently. Claude Code combines the lists from each file instead of picking one, so a lower level can add rules but cannot remove rules set elsewhere. When rules conflict, a deny rule always overrides an allow rule, whichever file each came from, and an allow rule in your local file does not outrank an ask rule from a project or managed file. Managed settings therefore cannot be loosened by user, project, local or --settings values. The only lower-level exceptions run in the safe direction: for a few security keys, Claude Code honors a stricter value from a lower level over a looser managed value, so a lower level can tighten managed policy but never relax it. A managed model is also only a starting default, and the real locks are availableModels and deniedModels. 
+
+### Where a human still has to look: placing the review gate by worst-case cost
+
 Permission modes and deny rules decide what the agent can do without asking. They do not decide where you, the human, still need to look before an action lands. That decision rests on one question, the same one that separates a safe mode from a risky one: what is the worst outcome if this action runs without a person checking it? The lower the cost of being wrong, the more you can let through. The higher the cost, and the harder it is to undo, the more a step needs a human gate before it executes.
 
 That same worst-case question places the gate whether the agent is writing code or running unattended in an automated step such as a bot that comments on or blocks a pull request. Three placements follow from it:
