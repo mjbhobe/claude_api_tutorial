@@ -10,6 +10,8 @@ In previous modules, you set up essential API components: prompts, tool schemas,
 * **Claude Code** allows you to operate the same model within your terminal environment, introducing a permission layer, configuration system, and team-oriented sharing features. 
 * **The MCP protocol** enables secure integration with external services. In this module, you’ll learn how to configure Claude Code and MCP for robust security and effective deployment.
 
+## Permission Modes &amp; Human Gates
+
 ### Claude Code agent loop, permission modes, settings, and where a human gate goes
 
 <span style="font-size: 1.15em">_Module 2 established how the agent loop works at the API level: the model calls tools, gets results back, and continues until the task is done._</span>
@@ -172,15 +174,15 @@ Settings can be placed at several levels, and each level determines the scope of
         },
         "hooks": {
             "PostToolUse": [
-            {
-                "matcher": "Edit|Write",
-                "hooks": [
                 {
-                    "type": "command",
-                    "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/python_quality_gate.sh"
+                    "matcher": "Edit|Write",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/python_quality_gate.sh"
+                        }
+                    ]
                 }
-                ]
-            }
             ]
         }
         }
@@ -197,7 +199,7 @@ Settings can be placed at several levels, and each level determines the scope of
         "spinnerTipsEnabled": false,
         "permissions": {
             "allow": [
-            "Bash(python -m pytest tests/payments/*)"
+                "Bash(python -m pytest tests/payments/*)"
             ]
         },
         "env": {
@@ -208,7 +210,7 @@ Settings can be placed at several levels, and each level determines the scope of
     ```
 * **Enterprise level** (`managed-settings.json`, set by administrators): **Cannot be overridden by users or project files**. The right place for organization-wide security controls such as denying edits to environment files or blocking specific shell commands across all projects.
 
-    On macOS it lives at `/Library/Application Support/ClaudeCode/managed-settings.json`, on Linux and WSL at `/etc/claude-code/managed-settings.json`, and on Windows at `C`:\ProgramData\ClaudeCode\managed-settings.json`. The same JSON can also be delivered through MDM (mobile device management, such as Intune or Jamf) or server-managed settings from the claude.ai console. In a bank, MDM is usually the right channel, because an ordinary file can be edited by anyone with local admin rights. 
+    On macOS it lives at `/Library/Application Support/ClaudeCode/managed-settings.json`, on Linux and WSL at `/etc/claude-code/managed-settings.json`, and on Windows at `C:\ProgramData\ClaudeCode\managed-settings.json`. The same JSON can also be delivered through MDM (mobile device management, such as Intune or Jamf) or server-managed settings from the claude.ai console. In a bank, MDM is usually the right channel, because an ordinary file can be edited by anyone with local admin rights. 
 
     Here is an example:
     ```json
@@ -222,23 +224,23 @@ Settings can be placed at several levels, and each level determines the scope of
         "permissions": {
             "disableBypassPermissionsMode": "disable",
             "deny": [
-            "Read(./.env)",
-            "Read(./.env.*)",
-            "Read(**/secrets/**)",
-            "Read(**/*.pem)",
-            "Read(**/*.pfx)",
-            "Read(~/.ssh/**)",
-            "Read(~/.aws/**)",
-            "Edit(./.github/workflows/**)",
-            "Bash(curl *)",
-            "Bash(wget *)",
-            "Bash(pip install *)",
-            "Bash(pip3 install *)",
-            "Bash(git push --force*)",
-            "Bash(git push -f *)"
+                "Read(./.env)",
+                "Read(./.env.*)",
+                "Read(**/secrets/**)",
+                "Read(**/*.pem)",
+                "Read(**/*.pfx)",
+                "Read(~/.ssh/**)",
+                "Read(~/.aws/**)",
+                "Edit(./.github/workflows/**)",
+                "Bash(curl *)",
+                "Bash(wget *)",
+                "Bash(pip install *)",
+                "Bash(pip3 install *)",
+                "Bash(git push --force*)",
+                "Bash(git push -f *)"
             ],
             "ask": [
-            "Bash(git push *)"
+                "Bash(git push *)"
             ]
         },
         "sandbox": {
@@ -267,7 +269,7 @@ Settings can be placed at several levels, and each level determines the scope of
 Allow and deny rules layer on top of the selected mode. **A deny rule always wins over an allow rule**, regardless of the mode in effect. The most durable governance control is an enterprise-level deny rule: it cannot be removed by any individual developer and applies even when a bypass mode is set.
 
 > [!Caution]
-> **How the four levels interact**. For single-value keys such as model, theme or an env variable, Claude Code uses the value from the highest level that sets it, in this order: managed settings, command line, project local, shared project, then user. List keys such as permissions.allow and permissions.deny work differently. Claude Code combines the lists from each file instead of picking one, so a lower level can add rules but cannot remove rules set elsewhere. When rules conflict, a deny rule always overrides an allow rule, whichever file each came from, and an allow rule in your local file does not outrank an ask rule from a project or managed file. Managed settings therefore cannot be loosened by user, project, local or --settings values. The only lower-level exceptions run in the safe direction: for a few security keys, Claude Code honors a stricter value from a lower level over a looser managed value, so a lower level can tighten managed policy but never relax it. A managed model is also only a starting default, and the real locks are availableModels and deniedModels. 
+> **How the four levels interact**. For single-value keys such as model, theme or an env variable, Claude Code uses the value from the highest level that sets it, in this order: managed settings, command line, project local, shared project, then user. List keys such as `permissions.allow` and `permissions.deny` work differently. Claude Code combines the lists from each file instead of picking one, so a lower level can add rules but cannot remove rules set elsewhere. When rules conflict, a deny rule always overrides an allow rule, whichever file each came from, and an allow rule in your local file does not outrank an ask rule from a project or managed file. Managed settings therefore cannot be loosened by user, project, local or --settings values. The only lower-level exceptions run in the safe direction: for a few security keys, Claude Code honors a stricter value from a lower level over a looser managed value, so a lower level can tighten managed policy but never relax it. A managed model is also only a starting default, and the real locks are availableModels and deniedModels. 
 
 ### Where a human still has to look: placing the review gate by worst-case cost
 
@@ -280,9 +282,599 @@ Gate any action that is hard to undo or reaches a sensitive path: a write outsid
 Never let the agent be the only gate on a change to code your team has marked sensitive. There the agent’s work is an input to a human decision, not a replacement for one, so a person must review the change before it merges no matter how confident the agent or its own review sounds.
 The placement of the gate and the choice of permission mode are the same decision viewed from two sides. The mode sets the default for a whole session, and the gate is where you override that default for the one action whose cost is too high to leave to the default; both come from asking what breaks if this runs unchecked.
 
-Cost · Complexity · Risk
-Cost: Running in default mode on trusted work adds prompt latency to every tool call, and this accumulates on a long refactor.
+> [!Tip]
+> **Cost · Complexity · Risk**
+>
+> **Cost**: Running in default mode on trusted work adds prompt latency to every tool call, and this accumulates on a long refactor.
+>
+> **Complexity**: Multiple levels of settings and files with an override hierarchy require consistent care. A deny rule at the enterprise level that contradicts an allow rule at the project level needs to be understood by everyone maintaining the project config.
+>
+> **Risk**: The risk lies in using the wrong mode for the context. For example, a bypass mode set out of impatience on a non-isolated machine removes every safety prompt between the agent and your live files, and, unlike the other modes, also removes the protected-path guard.
 
-Complexity: Multiple levels of settings and files with an override hierarchy require consistent care. A deny rule at the enterprise level that contradicts an allow rule at the project level needs to be understood by everyone maintaining the project config.
+## The bypass mode that removed the one prompt that mattered
 
-Risk: The risk lies in using the wrong mode for the context. For example, a bypass mode set out of impatience on a non-isolated machine removes every safety prompt between the agent and your live files, and, unlike the other modes, also removes the protected-path guard.
+
+> [!Important]
+> <small>**SETUP**</small>
+>
+> You switched to bypass Permissions to stop the constant prompts because the work felt routine. The agent had been well-behaved for days, the cleanup task was simple, and the prompt-before-every-tool-call behavior felt like unnecessary friction.
+
+### The transcript
+
+The following pairing session happened on a codebase cleanup that had been running without incident for three days.
+
+```
+Dev: "All right, I’m switching to bypassPermissions for this one. It’s just renaming old API endpoint references. Nothing risky."
+Claude Code: [Scanning files matching pattern /v1/legacy/ ... 47 files found]
+Claude Code: [Updating endpoint references ...]
+Claude Code: [Running post-rename cleanup.sh script ...]
+Claude Code: [Deleted 3 files matching /v1/legacy/ in /deploy/config/prod/ ...]
+Dev: "Wait. What was in /deploy/config/prod/?"
+Claude Code: [Files contained environment-specific endpoint overrides for the production deployment. They have been removed.]
+Dev: "That directory wasn’t supposed to be in scope. I was working on /src/."
+Claude Code: [The pattern /v1/legacy/ matched files in both /src/ and /deploy/config/prod/. In bypassPermissions mode, no confirmation was requested before the deletions.]
+```
+
+The prompt that would have caught this mistake was turned off when bypassPermissions was turned on. In default or acceptEdits mode, the cleanup script would not have run without a confirmation, and the user could have stopped the deletion before it reached the production configuration files. In bypassPermissions, the pattern match was broader than intended, and no prompt stood between the script and the files it deleted.
+
+Note the precise location of the gate: it was the script invocation that would have prompted, not rm deletion commands by themselves. acceptEdits auto-approves common filesystem commands, including rm on paths inside the working directory. Had Claude issued the deletions directly as rm commands, acceptEdits would have let them through silently; only default mode prompts for those.
+
+> [!Caution]
+> <small>**WHAT TO WATCH OUT FOR**</small>
+>
+> A bypass mode silences all confirmation prompts, including the ones you might not have anticipated. The failure pattern here is an agent matching a broader set of files than you intended, running in a mode without checkpoints. BypassPermissions also skips the protected path guard that the other modes keep, so even repo state and Claude’s own configuration lose their automatic prompt. To cover this gap, you must set a deny rule on sensitive directories before switching modes. If you want fewer prompts without losing the safety net, use a classifier-gated mode (e.g., auto) instead of a full bypass.
+
+## Durable Project Context
+
+### Durable project context with CLAUDE.md, rules files, hooks, and subagents
+
+<span style="font-size: 1.25em">_Previously we saw how Claude Code gates actions through permission modes and settings files. That configuration layer controls what the agent is allowed to do._</span>
+
+This cluster builds on top of it: now you’ll learn how to configure what the agent knows and how it behaves, so the rules and project context you define in a session are still in effect at the start of the next one.
+
+### CLAUDE.md: the project file that loads into every session
+
+Every time Claude Code starts in a project directory, it looks for a file named `CLAUDE.md` at the root and reads it. The contents are appended to your prompt before any message from you arrives. This means every convention, constraint, and command you put in `CLAUDE.md` is present from the first prompt of every session, without you having to re-state it.
+
+The `/init` command scans your codebase and generates a starter `CLAUDE.md`. The generated file is a great baseline but should be validated before using. Refine it to hold the rules that control the outcome of your prompts: your testing commands, your framework conventions, the paths the agent should not touch, and the style decisions that differ from defaults.
+
+Size is the main failure mode. A `CLAUDE.md` that keeps growing with every new instruction can dilute the rules that matter most. A larger file consumes more of the context window, which makes any single instruction a smaller fraction of what loads, and that reduces the chance that the agent follows the one rule that catches a real mistake. Hold `CLAUDE.md` to the constraints that change behavior and move everything else into Skills that load on demand.
+
+### Rules instruction files: scoping guidance to where it applies
+
+In the previous section, we established that `CLAUDE.md` loads into every session and should hold the instructions that apply across the whole project. The next question is what to do with guidance that matters only in one part of the codebase. That is where rules instruction files come in: they let you apply instructions only where they are relevant, instead of loading them into every session.
+
+`CLAUDE.md` is always on, and rules files add a narrower layer on top of that baseline. They live in the project’s `.claude/rules/` directory and can be scoped to specific paths using a `paths` glob in their YAML frontmatter. A rule scoped this way loads into context only when Claude Code works with files matching the pattern, this allows a rule to be applied to one part of the codebase without cluttering the rest of the context.
+
+Note that the scoping comes from the frontmatter, not from file placement. Rules files can be organized into subdirectories of `.claude/rules/` (e.g., `.claude/rules/database/`), but that structure is organizational only; a rules file without a `paths` field loads unconditionally at launch, with the same priority as `CLAUDE.md`, no matter where it sits inside `.claude/rules/`.
+
+In practice, put broad project memory and universal constraints in `CLAUDE.md`, and put narrow, path-specific guidance in rules files scoped with paths. A constraint like “never modify the database schema” lives in `CLAUDE.md` because it applies everywhere. A constraint like “all SQL in the database module must include an explicit transaction boundary” lives in `.claude/rules/database.md` with frontmatter such as:
+
+```
+---
+paths:
+  - "src/db/**/*.sql"
+---
+```
+
+so it enters context only when Claude is working with those files.
+
+### Hooks: running your own scripts at fixed points in the lifecycle
+
+A **Hook** allows you to intercept and control tool calls before or after they execute. When you write a specific rule in `CLAUDE.md` telling the agent to run `Prettier` after every file edited, the agent will follow it most of the time. Alternatively, a hook makes it happen every single time without exceptions because the hook fires independently of what the model decides to do.
+
+Hooks are defined in settings files and configured using the `/hooks` command. Each hook is bound to a lifecycle event, an optional matcher that scopes it to specific tool types, and a command that runs when the event fires. The core events for most guardrail and automation use cases are:
+
+* `PreToolUse`: Runs before a tool call executes. Because it runs first, a `PreToolUse` hook can examine the tool call and exit with code 2 to block it, writing the reason to stderr as feedback the agent sees. This is how you enforce access controls at the configuration layer rather than hoping the agent respects a `CLAUDE.md` instruction.
+* `PostToolUse`: Runs after a tool call completes. Since the call has already happened, this event cannot block it, which makes it the right place for automated side effects: running a code formatter after an edit, triggering tests after a file change, or logging the operation for an audit trail.
+* `UserPromptSubmit`: Runs when you submit a prompt, before the model processes it. Use it when you need to inject context or validate the request before any work starts.
+* `Stop`: Runs when the model finishes responding. Use it for follow-up actions that belong at the end of a turn, such as notifications, cleanup tasks, or committing the audit log.
+* `Notification`: Runs when Claude Code sends a notification, which occurs when Claude needs permission to use a tool or after Claude Code has been idle for 60 seconds. Use it to route those signals to an external channel or logging system.
+* `SessionStart`: Runs when a session starts or resumes. Use it to initialize state, validate environment variables, or confirm required services are reachable before the agent begins work.
+* `SessionEnd`: Runs when a session ends. Use it for teardown tasks, final audit writes, or notifications that the session has closed.
+
+A hook that blocks edits to a production configuration path using a `PreToolUse` event enforces that constraint at every tool call during every session, regardless of permission mode. That is the difference between a guardrail and a convention.
+
+#### Worked Example
+
+Here is a complete worked example of setting up hooks - we will set these up in `.claude/settings.json` (i.e. at project level). Each hook receives a JSON object on stdin, and exit code 0 means success, exit code 2 is a blocking error whose stderr is shown to Claude, and any other code is a non-blocking error. Your script must therefore read stdin and choose its exit code deliberately.
+
+
+**Project Layout**
+
+```bash
+.claude/
+  settings.json
+  hooks/
+    common.py
+    pre_tool_use_guard.py
+    post_tool_use_format.py
+    user_prompt_submit_pii.py
+    stop_run_tests.py
+    notification_slack.py
+    session_start_check.py
+    session_end_audit.py
+```
+
+1. `.claude/settings.json`
+
+This single file wires all seven events. The matcher field only applies to tool events (`PreToolUse`, `PostToolUse`). The other events ignore it.
+
+```json
+// .claude/settings.json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre_tool_use_guard.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post_tool_use_format.py"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/user_prompt_submit_pii.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop_run_tests.py",
+            "timeout": 180
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notification_slack.py"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session_start_check.py"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session_end_audit.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+2. `common.py` (shared helpers)
+
+```python
+"""Shared helpers for Claude Code hook scripts."""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, NoReturn
+
+
+def project_dir() -> Path:
+    """Returns the project root, falling back to the current directory.
+
+    Returns:
+        Path to the directory Claude Code was launched from.
+    """
+    return Path(os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd()))
+
+
+def read_event() -> dict[str, Any]:
+    """Parses the JSON event that Claude Code writes to stdin.
+
+    Returns:
+        The decoded event payload.
+
+    Raises:
+        SystemExit: With code 1 (non-blocking error) if stdin is not valid JSON.
+    """
+    try:
+        return json.load(sys.stdin)
+    except json.JSONDecodeError as exc:
+        print(f"Hook received invalid JSON on stdin: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+
+def block(reason: str) -> NoReturn:
+    """Exits with code 2 and sends the reason to Claude via stderr.
+
+    Args:
+        reason: Human-readable explanation Claude will see as feedback.
+    """
+    print(reason, file=sys.stderr)
+    sys.exit(2)
+
+
+def append_audit(record: dict[str, Any]) -> None:
+    """Appends one JSON line to the project audit log.
+
+    Args:
+        record: Fields to store. A UTC timestamp is added automatically.
+    """
+    log_path = project_dir() / ".claude" / "audit" / "audit.jsonl"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    record = {"ts": datetime.now(timezone.utc).isoformat(), **record}
+    with log_path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record) + "\n")
+```
+
+3. `PreToolUse: block edits to production config`
+
+Scenario: the repo holds credit-policy thresholds in `config/prod/` and applied database migrations. A change there needs a reviewed pull request, never an agent edit.
+
+```python
+#!/usr/bin/env python3
+"""PreToolUse hook: block edits to protected BFSI configuration paths."""
+
+from __future__ import annotations
+
+from pathlib import PurePosixPath
+
+from common import append_audit, block, read_event
+
+# Paths relative to the repo root that the agent may never modify.
+PROTECTED_PREFIXES = (
+    "config/prod/",          # credit-policy cut-offs, interest rate tables
+    "db/migrations/applied/",  # migrations already run in production
+    ".github/workflows/",    # deployment pipelines
+)
+
+
+def is_protected(file_path: str, project_root: str) -> bool:
+    """Checks whether a path falls under a protected prefix.
+
+    Args:
+        file_path: Absolute or relative path the tool wants to modify.
+        project_root: Absolute path of the project root.
+
+    Returns:
+        True if the path is inside a protected location.
+    """
+    normalised = file_path.replace("\\", "/")
+    root = project_root.replace("\\", "/").rstrip("/") + "/"
+    if normalised.startswith(root):
+        normalised = normalised[len(root):]
+    # Collapse "../" segments so "src/../config/prod/x" cannot slip through.
+    parts: list[str] = []
+    for part in PurePosixPath(normalised).parts:
+        if part == "..":
+            if parts:
+                parts.pop()
+        elif part != ".":
+            parts.append(part)
+    clean = "/".join(parts)
+    return any(clean.startswith(prefix) for prefix in PROTECTED_PREFIXES)
+
+
+def main() -> None:
+    event = read_event()
+    tool_input = event.get("tool_input", {})
+    file_path = tool_input.get("file_path", "")
+    if file_path and is_protected(file_path, event.get("cwd", "")):
+        append_audit(
+            {"event": "blocked_edit", "tool": event.get("tool_name"), "path": file_path}
+        )
+        block(
+            f"Blocked: {file_path} is a protected path. Production config and "
+            "applied migrations change only through a reviewed pull request. "
+            "Propose the change as a diff in chat instead."
+        )
+
+
+if __name__ == "__main__":
+    main()
+```
+
+4. `PostToolUse`: format and lint every edited Python file
+
+The edit has already happened, so this hook cannot undo it. It cleans up and reports problems back to Claude.
+
+```python
+#!/usr/bin/env python3
+"""PostToolUse hook: run ruff on every Python file Claude edits."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+
+from common import append_audit, block, read_event
+
+
+def run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
+    """Runs a command and captures its output.
+
+    Args:
+        cmd: Command and arguments.
+
+    Returns:
+        The completed process with stdout and stderr as text.
+    """
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=60, check=False)
+
+
+def main() -> None:
+    event = read_event()
+    file_path = event.get("tool_input", {}).get("file_path", "")
+    if not file_path.endswith(".py"):
+        sys.exit(0)
+
+    run(["ruff", "format", file_path])
+    lint = run(["ruff", "check", "--fix", file_path])
+    append_audit({"event": "file_edited", "path": file_path, "lint_ok": lint.returncode == 0})
+
+    if lint.returncode != 0:
+        # Exit 2 shows stderr to Claude so it fixes the remaining issues.
+        block(f"ruff found issues in {file_path}:\n{lint.stdout}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+5. `UserPromptSubmit`: stop customer identifiers reaching the model
+
+This hook runs before the model sees your prompt. It rejects prompts containing an Indian PAN or Aadhaar-shaped number, and otherwise injects the current git branch as context.
+
+```python
+#!/usr/bin/env python3
+"""UserPromptSubmit hook: reject prompts that contain customer identifiers."""
+
+from __future__ import annotations
+
+import re
+import subprocess
+
+from common import block, read_event
+
+PAN_PATTERN = re.compile(r"\b[A-Z]{5}[0-9]{4}[A-Z]\b")          # e.g. ABCDE1234F
+AADHAAR_PATTERN = re.compile(r"\b\d{4}\s?\d{4}\s?\d{4}\b")      # 12 digits
+
+
+def contains_identifier(text: str) -> str | None:
+    """Detects PAN or Aadhaar-shaped values in text.
+
+    Args:
+        text: The prompt submitted by the user.
+
+    Returns:
+        The identifier type found, or None if the text looks clean.
+    """
+    if PAN_PATTERN.search(text):
+        return "PAN"
+    if AADHAAR_PATTERN.search(text):
+        return "Aadhaar"
+    return None
+
+
+def current_branch() -> str:
+    """Returns the current git branch name, or 'unknown' on failure."""
+    result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True, text=True, check=False,
+    )
+    return result.stdout.strip() or "unknown"
+
+
+def main() -> None:
+    event = read_event()
+    found = contains_identifier(event.get("prompt", ""))
+    if found:
+        # Exit 2 on this event blocks the prompt and shows the message to you.
+        block(f"Prompt rejected: it appears to contain a {found} number. "
+              "Replace real customer data with masked test values and resubmit.")
+    # For this event, stdout on exit 0 is added to Claude's context.
+    print(f"Context: working on git branch '{current_branch()}'.")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+6. `Stop`: do not let Claude finish while tests fail
+
+```python
+#!/usr/bin/env python3
+"""Stop hook: run the fast test suite before Claude ends its turn."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+
+from common import block, read_event
+
+
+def main() -> None:
+    event = read_event()
+    # Without this guard, a failing suite would force Claude to continue forever.
+    if event.get("stop_hook_active"):
+        sys.exit(0)
+
+    result = subprocess.run(
+        ["pytest", "-x", "-q", "-m", "not slow", "tests/"],
+        capture_output=True, text=True, timeout=150, check=False,
+    )
+    if result.returncode != 0:
+        # Exit 2 on Stop tells Claude to keep working, with this feedback.
+        tail = "\n".join(result.stdout.splitlines()[-25:])
+        block(f"Tests are failing. Fix them before finishing:\n{tail}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+7. `Notification`: route permission prompts to Slack
+
+```python
+#!/usr/bin/env python3
+"""Notification hook: forward Claude Code notifications to a Slack channel."""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+import urllib.request
+
+from common import read_event
+
+
+def post_to_slack(webhook_url: str, text: str) -> None:
+    """Posts a plain-text message to a Slack incoming webhook.
+
+    Args:
+        webhook_url: Slack incoming-webhook URL.
+        text: Message body.
+    """
+    request = urllib.request.Request(
+        webhook_url,
+        data=json.dumps({"text": text}).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    urllib.request.urlopen(request, timeout=5).close()
+
+
+def main() -> None:
+    event = read_event()
+    webhook = os.environ.get("SLACK_WEBHOOK_URL")
+    if not webhook:
+        sys.exit(0)  # Silently skip when the webhook is not configured.
+    message = event.get("message", "Claude Code needs your attention.")
+    try:
+        post_to_slack(webhook, f"Claude Code ({event.get('cwd', '')}): {message}")
+    except OSError as exc:
+        print(f"Slack notification failed: {exc}", file=sys.stderr)
+        sys.exit(1)  # Non-blocking: the session continues.
+
+
+if __name__ == "__main__":
+    main()
+```
+
+8. `SessionStart`: validate the environment before work begins
+
+```python
+#!/usr/bin/env python3
+"""SessionStart hook: confirm required configuration exists."""
+
+from __future__ import annotations
+
+import os
+
+from common import append_audit, read_event
+
+REQUIRED_ENV = ("DATABASE_URL", "BUREAU_API_BASE_URL")  # e.g. credit-bureau sandbox
+
+
+def missing_variables() -> list[str]:
+    """Lists required environment variables that are unset or empty.
+
+    Returns:
+        Names of the missing variables.
+    """
+    return [name for name in REQUIRED_ENV if not os.environ.get(name)]
+
+
+def main() -> None:
+    event = read_event()
+    missing = missing_variables()
+    append_audit({"event": "session_start", "source": event.get("source"), "missing_env": missing})
+
+    # stdout from SessionStart is added to Claude's context.
+    if missing:
+        print("WARNING: missing environment variables: " + ", ".join(missing) + ". "
+              "Do not attempt anything that needs the database or bureau API.")
+    else:
+        print("Environment check passed. Use the sandbox bureau endpoint only.")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+9. `SessionEnd`: write the final audit record
+
+```python
+#!/usr/bin/env python3
+"""SessionEnd hook: record why and when the session closed."""
+
+from __future__ import annotations
+
+from common import append_audit, read_event
+
+
+def main() -> None:
+    event = read_event()
+    append_audit(
+        {
+            "event": "session_end",
+            "session_id": event.get("session_id"),
+            "reason": event.get("reason"),  # e.g. "clear", "logout", "exit"
+        }
+    )
+
+
+if __name__ == "__main__":
+    main()
+```
+
+### Subagents: delegating work to an isolated context
+
+A subagent is a specialized assistant that Claude Code can delegate tasks to, and each assistant runs a task in its own separate context and returns only its output. It does not inherit your main conversation history, the files you have accumulated in context, or your current session state. When you send a task to a subagent, it starts from a clean slate, does the work, and hands back the result.
+
+The built-in subagents differ in what they load at startup; this difference determines how your project rules apply. Always check the current list in the Claude Code docs, because the set has grown over time, but know that the specific split that affects your project rules holds across versions. The Explore and Plan built-in subagents skip `CLAUDE.md` and git status to keep research fast and cheap. They are optimized for speed, so project-level rules and repository state defined in `CLAUDE.md` are not in their context when they run. The general-purpose subagent loads both. If you delegate a task to Explore or Plan and a rule from your `CLAUDE.md` applies, it’s because that context was not loaded. For tasks where your project constraints must be respected, use the general-purpose subagent or a custom subagent that explicitly loads the rules it needs.
+
+Custom subagents also do not automatically see your skills. If you define a custom subagent in `.claude/agents` and it needs a specific skill, you must explicitly list that skill in the agent’s front matter. Built-in agents do not have preloaded skills. If a built-in agent needs skill-backed behavior, the correct path is to create a custom subagent with those skills listed in its configuration.
+
+The map below names each mechanism, what it loads, when it runs, its context cost, and what belongs in it. Use it to decide which mechanism carries a specific piece of project knowledge, since each one makes a different tradeoff between how much context it costs and how reliably it applies. Flip each card for the full picture.
+
+<< TO DO - the map at bottom>>
