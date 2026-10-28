@@ -86,7 +86,7 @@ Now, let’s understand more about each of these techniques and when each one ap
 <div class="jb-tab-content">
 
 <div class="jb-tab-panel jb-p1" id="g1-content1">
-<p><strong>System Prompts</strong><br/><p>System prompts carry the behavioral contract for the whole session. Write them once and treat them as your persistent instruction layer. They define Claude’s role, the output format, and any rules that must not change between conversations.</p>
+<p><strong>System Prompts</strong><br/><p>System prompts carry the behavioral contract for the whole session. Write them once and treat them as your persistent instruction layer. <b>They define Claude’s role, the output format, and any rules that must not change between conversations.</b></p>
 </div>
 
 <div class="jb-tab-panel jb-p2" id="g1-content2">
