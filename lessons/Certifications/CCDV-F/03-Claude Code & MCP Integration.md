@@ -291,7 +291,7 @@ The placement of the gate and the choice of permission mode are the same decisio
 >
 > **Risk**: The risk lies in using the wrong mode for the context. For example, a bypass mode set out of impatience on a non-isolated machine removes every safety prompt between the agent and your live files, and, unlike the other modes, also removes the protected-path guard.
 
-## The bypass mode that removed the one prompt that mattered
+### The bypass mode that removed the one prompt that mattered
 
 
 > [!Important]
@@ -305,14 +305,14 @@ The following pairing session happened on a codebase cleanup that had been runni
 
 ```
 Dev: "All right, I’m switching to bypassPermissions for this one. It’s just renaming old API endpoint references. Nothing risky."
-Claude Code: [Scanning files matching pattern /v1/legacy/ ... 47 files found]
-Claude Code: [Updating endpoint references ...]
-Claude Code: [Running post-rename cleanup.sh script ...]
-Claude Code: [Deleted 3 files matching /v1/legacy/ in /deploy/config/prod/ ...]
+**Claude Code:** [Scanning files matching pattern /v1/legacy/ ... 47 files found]
+**Claude Code:** [Updating endpoint references ...]
+**Claude Code:** [Running post-rename cleanup.sh script ...]
+**Claude Code:** [Deleted 3 files matching /v1/legacy/ in /deploy/config/prod/ ...]
 Dev: "Wait. What was in /deploy/config/prod/?"
-Claude Code: [Files contained environment-specific endpoint overrides for the production deployment. They have been removed.]
+**Claude Code:** [Files contained environment-specific endpoint overrides for the production deployment. They have been removed.]
 Dev: "That directory wasn’t supposed to be in scope. I was working on /src/."
-Claude Code: [The pattern /v1/legacy/ matched files in both /src/ and /deploy/config/prod/. In bypassPermissions mode, no confirmation was requested before the deletions.]
+**Claude Code:** [The pattern /v1/legacy/ matched files in both /src/ and /deploy/config/prod/. In bypassPermissions mode, no confirmation was requested before the deletions.]
 ```
 
 The prompt that would have caught this mistake was turned off when bypassPermissions was turned on. In default or acceptEdits mode, the cleanup script would not have run without a confirmation, and the user could have stopped the deletion before it reached the production configuration files. In bypassPermissions, the pattern match was broader than intended, and no prompt stood between the script and the files it deleted.
@@ -871,10 +871,198 @@ if __name__ == "__main__":
 
 A subagent is a specialized assistant that Claude Code can delegate tasks to, and each assistant runs a task in its own separate context and returns only its output. It does not inherit your main conversation history, the files you have accumulated in context, or your current session state. When you send a task to a subagent, it starts from a clean slate, does the work, and hands back the result.
 
-The built-in subagents differ in what they load at startup; this difference determines how your project rules apply. Always check the current list in the Claude Code docs, because the set has grown over time, but know that the specific split that affects your project rules holds across versions. The Explore and Plan built-in subagents skip `CLAUDE.md` and git status to keep research fast and cheap. They are optimized for speed, so project-level rules and repository state defined in `CLAUDE.md` are not in their context when they run. The general-purpose subagent loads both. If you delegate a task to Explore or Plan and a rule from your `CLAUDE.md` applies, it’s because that context was not loaded. For tasks where your project constraints must be respected, use the general-purpose subagent or a custom subagent that explicitly loads the rules it needs.
+The built-in subagents differ in what they load at startup; this difference determines how your project rules apply. Always check the current list in the Claude Code docs, because the set has grown over time, but know that the specific split that affects your project rules holds across versions. The Explore and Plan built-in subagents skip `CLAUDE.md` and `git status` to keep research fast and cheap. They are optimized for speed, so project-level rules and repository state defined in `CLAUDE.md` are not in their context when they run. The general-purpose subagent loads both. If you delegate a task to Explore or Plan and a rule from your `CLAUDE.md` applies, it’s because that context was not loaded. For tasks where your project constraints must be respected, use the general-purpose subagent or a custom subagent that explicitly loads the rules it needs.
 
 Custom subagents also do not automatically see your skills. If you define a custom subagent in `.claude/agents` and it needs a specific skill, you must explicitly list that skill in the agent’s front matter. Built-in agents do not have preloaded skills. If a built-in agent needs skill-backed behavior, the correct path is to create a custom subagent with those skills listed in its configuration.
 
 The map below names each mechanism, what it loads, when it runs, its context cost, and what belongs in it. Use it to decide which mechanism carries a specific piece of project knowledge, since each one makes a different tradeoff between how much context it costs and how reliably it applies. Flip each card for the full picture.
 
-<< TO DO - the map at bottom>>
+1. `CLAUDE.md`
+
+    * **What it loads:** Full file contents prepended to context at session start.
+    * **When it runs:** Every session, unconditionally.
+    * **Context cost:** Persistent per session. Dilutes with size.
+    * **Belongs here:** Universal project constraints, commands, and framework decisions.
+
+2. `Rules File`
+
+    * **What it loads:** File contents. Scoped via a paths glob in YAML frontmatter; without paths, loads like CLAUDE.md.
+
+    * **When it runs:** When Claude reads a file matching the rule’s paths patterns. Unscoped rules load at session start.
+
+    * **Context cost:** Path-scoped: adds to context only when triggered. Unscoped: same persistent cost as CLAUDE.md.
+
+    * **Belongs here:** Path-specific guidance that would be noise everywhere else.
+
+3. `Hook`
+
+    * **What it loads:** Run your script at the lifecycle event. No content added to context.
+
+    * **When it runs:** At the configured event (PreToolUse, PostToolUse, etc.).
+
+    * **Context cost:** Minimal: only the script output if routed back to Claude.
+
+    * **Belongs here:** Enforced guardrails, automated side effects, audit logging.
+
+4. `Subagent`
+
+    * **What it loads:** Task context only. Isolated from the main session.
+
+    * **When it runs:** When dispatched by the main session for a delegated task.
+
+    * **Context cost:** Returns a summary, not the full task history.
+
+    * **Belongs here:** Exploration, investigation, and tasks whose output would otherwise bloat the main context. Also useful for tasks that can be broken down and parallelized.
+
+### The CLAUDE.md that kept growing until the rules stopped landing
+
+> [!Tip]
+> **Setup**
+
+> Your CLAUDE.md kept growing because every new rule felt worth adding. Each addition was individually reasonable, and the file seemed to be the right place for each rule. But over a few weeks, the file grew to over 800 lines.
+
+#### The trace
+
+The following is a session log excerpt from a project with a CLAUDE.md that accumulated over two months of team additions.
+
+```markdown
+Session context window loaded:
+  CLAUDE.md: 847 lines
+  Contents include: framework preferences (lines 1–40), testing conventions (lines 41–90), style guide (lines 91–210), dependency rules (lines 211–320), path restrictions (lines 321–360), historical decisions log (lines 361–700), archived notes (lines 701–847)
+
+**User prompt:** "Refactor the auth module to use the new token service. Do not modify the /legacy/tokens/ directory."
+**Claude Code action:** [Reading auth module ...]
+**Claude Code action:** [Editing auth/service.ts ...]
+**Claude Code action:** [Reading /legacy/tokens/store.ts for reference ...]
+**Claude Code action:** [Editing /legacy/tokens/store.ts to update token interface ...]
+Path restriction from CLAUDE.md (line 347): "Do not modify files in /legacy/tokens/."
+User: "You just edited /legacy/tokens/store.ts. I said not to touch that directory."
+**Claude Code:** "I apologize. The /legacy/tokens/ restriction is in the project instructions. The edit was made in the course of updating the token interface. I did not flag the conflict before proceeding."
+The rule was in the file; the agent had access to it. However, the failure was dilution: 846 other lines reduced the effective weight of the one instruction that mattered. The historical decisions log and archived notes should have been noted somewhere, but they did not belong in the CLAUDE.md.
+```
+
+> [!Important]
+> What to Watch Out for
+>
+> CLAUDE.md is a working set of rules that change behavior for the current session, not a growing append log. Every line you add reduces the weight of every other line. If a rule is path-specific, it belongs in a rules file. If a rule is historical context, it belongs in a separate reference document the agent reads on demand. When your CLAUDE.md grows past a few hundred lines, audit it: identify which rules are truly session-critical and move the rest. The one rule you cannot afford to dilute should be the shortest path to a hook.
+
+## Packaging Workflows
+
+### Packaging a workflow as a plugin: skills, custom commands, and marketplace install
+
+<span style="font-size: 1.15em;">_Previously, we covered the mechanisms that give Claude Code durable context and enforce behavior: CLAUDE.md for always-on project memory, rules files for scoped guidance, hooks for deterministic guardrails, and subagents for isolated task delegation._</span>
+
+These mechanisms live in your `.claude` directory and are version-controlled with the project. Now we turn to the next question: how can you package that setup so a teammate can install it simply in one step instead of repeating your manual configuration by hand?
+
+### Skills are reusable workflows the agent loads on demand
+
+A skill is a portable Markdown file (`SKILL.md` file) placed in `.claude/skills`. The front matter identifies the skill and describes when it applies, and the body holds the steps. The same skill can run in Claude Code, be invoked through Messages API, or be loaded by the Agent SDK. What changes across the three isn’t the file itself; it’s where the skill runs, how it gets loaded, and what it’s allowed to touch. A developer who has only ever seen skills in Claude Code may assume things that don’t hold true on the API, so this section outlines the differences.
+
+### How the skill loads and runs in each
+
+<div class="jb-tabs-container">
+<input type="radio" class="jb-r1" name="jb-tab-group-4" id="g4-tab1" checked>
+<input type="radio" class="jb-r2" name="jb-tab-group-4" id="g4-tab2">
+<input type="radio" class="jb-r3" name="jb-tab-group-4" id="g4-tab3">
+<input type="radio" class="jb-r4" name="jb-tab-group-4" id="g4-tab4">
+
+<div class="jb-tabs-header">
+<label class="jb-tab-label jb-l1" for="g4-tab1">Claude Code</label>
+<label class="jb-tab-label jb-l2" for="g4-tab2">Messages API</label>
+<label class="jb-tab-label jb-l3" for="g4-tab3">Agent SDK</label>
+<label class="jb-tab-label jb-l4" for="g4-tab4">Claude Managed Agents</label>
+</div>
+
+<div class="jb-tab-content">
+
+<div class="jb-tab-panel jb-p1" id="g4-content1">
+<p>
+How the skill loads: Discovered from .claude/skills on the filesystem. Loads on a description match or when you invoke it by name.
+
+Where the steps run: In your terminal session, against your local files, under the active permission mode and deny rules.
+
+What you need to know: It’s filesystem-based and is governed by the settings layer.
+</p>
+</div>
+
+<div class="jb-tab-panel jb-p2" id="g4-content2">
+<p>
+How the skill loads: Sent along with the request and run inside the code execution container, not your application’s environment. Requires code-execution and skills beta headers.
+
+Where the steps run: Inside Anthropic’s code execution container, not on your machine. The skill’s filesystem and tool access are whatever that container provides.
+
+What you need to know: A skill that assumes local files or local tools won’t behave the same way here, because it isn’t running where those files are.
+</p>
+</div>
+
+<div class="jb-tab-panel jb-p3" id="g4-content3">
+<p>
+How the skill loads: Loaded by the agent the SDK runs, but whether filesystem settings (CLAUDE.md, skills) load is controlled by the settingSources configuration. Do not rely on a default: always set it explicitly to the sources you intend, and confirm current default behavior against the Agent SDK reference at build time. You set it through the “settingSources” (TypeScript) / “setting_sources” (Python).
+
+Where the steps run: In the process the SDK runs, which is your environment, once you’ve told it to load filesystem sources.
+
+What you need to know: The common surprise: a skill that worked in Claude Code does nothing under the SDK because settingSources was never set, so the skill never loaded.
+</p>
+</div>
+
+<div class="jb-tab-panel jb-p4" id="g4-content4">
+<p>
+How the skill loads: Defined once as an API resource that names the model, system prompt, tools, MCP servers, and skills. Anthropic loads the skill server-side when the agent runs, so there is no filesystem discovery step on your side.
+
+Where the steps run: Inside a sandbox Anthropic provisions and runs, not your environment. Your application sends user events and reads streamed results back. The skill has access to whatever that managed sandbox provides, not your local files.
+
+What you need to know: Currently a public beta that requires the managed-agents-2026-04-01 beta header, and sessions are stored server-side, which means Managed Agents are not currently eligible for Zero Data Retention or HIPAA BAA coverage. Skills are attached when defining the agent resource, not at session time. Update the agent definition to change which skills are available.
+</p>
+</div>
+
+</div>
+</div>
+
+### Three portability rules
+
+* Write the description as the matching criterion. The model loads a skill by comparing your request to its description, so a description that identifies when the skill applies works in every runtime, but a vague one fails to load in all of them.
+* Don’t assume a local filesystem or local tools exist inside the skill body. A skill that shells out to a local command works in Claude Code but breaks on the Messages API, where it runs in a container without a command. Keep the skill’s steps confined to what the runtime is guaranteed to provide, or document the dependency.
+* Remember that subagents don’t inherit skills. This was true in Module 2, and is still true here: a subagent starts clean, so a skill the parent relied on has to be listed for the subagent explicitly, in every runtime that supports subagents.
+
+The practical takeaway is that you can author a skill once and reuse it, but you must specifically design for the ability to use it across terminals. A skill that’s scoped to a clear description and free of local-environment assumptions ports cleanly across runtimes, but one that assumes a specific local environment does not.
+
+| Handles well | Adds complexity | Use a different approach |
+| :-- | :-- | :-- |
+| A task-specific procedure authored once and reused across the interactive terminal, an API integration, and a headless SDK job. | Each runtime loads and sandboxes the skill differently, so you must account for beta headers on the API and settingSources on the SDK. | For instructions that must apply to every session in a project, CLAUDE.md is still the right tool. Skills are for on-demand, portable procedures. |
+
+### Giving a workflow an explicit entry point
+
+A custom command is a shortcut for a defined procedure. In current Claude Code, skills are the recommended format for both explicit and automatic invocation: you invoke a skill directly with /skill-name, or Claude loads it automatically when relevant. The older `.claude/commands/` directory format still works but is a legacy process. Use skills with disable-model-invocation: true in the frontmatter when you want a workflow that only runs when you explicitly call it.
+
+Plugin commands are namespaced automatically: the plugin’s name becomes the prefix, so a run-tests command in a plugin named payments is invoked as /payments:run-tests. This is why two plugins can both ship a run-tests command without colliding. Authors should treat the plugin name as part of the interface, since it prefixes every command you ship, and be aware that renaming the plugin renames them all.
+
+### The packaging layer that makes a setup installable
+
+A plugin bundles skills, hooks, subagents, and MCP servers into a single installable unit. Plugins can be packaged and distributed through a marketplace, which is a catalog of plugins that someone else has created and shared. The official Anthropic marketplace is available automatically when you start Claude Code, and you can add third-party marketplaces hosted in a GitHub repository with a command like /plugin marketplace add <owner/repo>. Teammates can then run one simple install command to get the same setup. The plugin replaces a page of manual setup steps with a versioned, auditable install. The plugin places components as follows:
+
+* Skills go in a skills directory.
+* Hooks, subagents, and settings go in their respective locations.
+
+The plugin manifest describes the bundle, and the install command wires it into the target installation. Plugins can be downloaded by individuals or at an enterprise-wide level.
+
+Enterprise administrators can deploy plugins organization-wide through managed settings. A managed marketplace allowlist gates which marketplace sources users are permitted to add, so the organization controls where plugins can come from. The allowlist restricts what users can add but does not register marketplaces automatically. If you would like to push a marketplace to all users without requiring them to run the add command themselves, pair the allowlist setting with `extraKnownMarketplaces` in managed settings. The precedence comes from the deployment scope: because managed settings sit above user and project settings in the configuration hierarchy, a plugin deployed at managed scope takes priority and cannot be overridden by users or project files. Review the reference layer for the exact setting names.
+
+### The packaging decision table
+
+The table below identifies each layer, who it is for, and when to reach for it.
+
+| Layer | What it is | Who it is for | When to reach for it |
+| :-- | :-- | :-- | :-- |
+| Skill | A Markdown file in .claude/skills that loads when its description matches the task or when invoked by name. | An individual developer or team using Claude Code interactively. | Reach for a skill when a task-specific procedure should stay out of context until it is needed, such as a PR review or a deployment checklist that only loads when the work calls for it. |
+| Custom command | A named shortcut that runs a defined procedure when you invoke it explicitly. | Developers who want a predictable, explicit entry point for high-frequency procedures. | Reach for a custom command when the procedure has a clear name and you want to trigger it directly rather than relying on the description to match the task. |
+| Plugin | A versioned bundle of skills, hooks, subagents, and MCP servers distributed through a marketplace. | A team that wants one-step installation of a shared, versioned setup. | Reach for a plugin when a working setup currently lives on one machine and needs to be shared, versioned, and kept consistent across a team. |
+
+> [!Tip]
+> <small>**Cost · Complexity · Risk**</small>
+>
+> **Cost**: Skills add context cost upon activation, but a plugin adds installation and maintenance overhead. The question to ask is whether you want to pay the setup cost once, as you do with a plugin install, or repeatedly, as you do when every developer runs the same manual steps by hand.
+>
+> **Complexity**: A plugin that hard-codes absolute paths in its skills will install correctly for the author and fail for everyone else, because any path or environment assumption baked into a skill or hook command is the thing most likely to break across machines.
+>
+> **Risk**: A plugin carries the components it bundles into every install. It’s important to remember that a deny rule or hook the author relied on locally is not included unless it is explicitly listed as part of the bundle. If the skills or hooks are tied to a guardrail that is not included in the bundle, then the protection does not carry over to a teammate’s machine.
+
