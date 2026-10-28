@@ -251,6 +251,8 @@ One interface, four ways of working. The choice decides **efficiency** and wheth
 - Use **inline responses** for answers you'll act on **within** the conversation.
 - Example: a final trip plan (photos, hotels, flights) as a shareable document.
 
+> **NOTE:** Chats can also generate artifacts. But the Artifact entry point starts from the output you want - slides, document, PDF etc. With the Artifact entry point, you provide/pick a template, provide your design guidelines for Claude to generate the Artifact using the same. For example slides will follow your brand guidelines, if you provide them. Chat has no such feature.
+
 ### 3.4 Research
 - **Deep, multi-source synthesis**; available on **paid plans**.
 - Runs **multi-step searches** across many sources and **synthesizes** them.
