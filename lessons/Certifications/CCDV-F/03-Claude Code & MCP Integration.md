@@ -1066,5 +1066,368 @@ The table below identifies each layer, who it is for, and when to reach for it.
 >
 > **Risk**: A plugin carries the components it bundles into every install. It’s important to remember that a deny rule or hook the author relied on locally is not included unless it is explicitly listed as part of the bundle. If the skills or hooks are tied to a guardrail that is not included in the bundle, then the protection does not carry over to a teammate’s machine.
 
+### The plugin that installed on your machine and failed on everyone else’s
 
+> [!Tip]
+A plugin installed cleanly tells you the package was assembled correctly; however, it does not tell you the plugin will run effectively, because installation and execution are different things. The install copies files into place. Execution resolves the paths and variables those files point at, against the machine where they are running. When a plugin author bakes their own machine’s layout into a skill, the install still succeeds everywhere, but the execution fails everywhere except the author’s own setup. This gap occurs because it’s something the author can’t see.
 
+#### What happened?
+
+A developer built a deployment workflow skill, packaged it as a plugin, and tested it locally. Local testing passed, the plugin went out to the team through the internal marketplace, and every teammate’s install succeeded, but the moment any teammate ran the skill, it failed.
+
+The root cause sat in the skill’s `SKILL.md`, in a command that pointed at `/Users/alexmorgan/projects/deploy-utils/validate.sh`.
+
+That directory existed on the author’s machine and nowhere else. The skill carried an absolute path to the author’s home directory, so every teammate’s run looked for a file that was on their system or included in the skill.
+
+A second skill in the same plugin leaned on an environment variable, `DEPLOY_TOKEN`, that the author had set in their own shell profile, and the plugin’s `README` never mentioned it. Three teammates spent two hours debugging before they traced the second failure to the missing variable.
+
+The plugin incorrectly treated the author’s machine as the team’s machine, which caused the break. Both failures in the example above have the same root cause and the same absolute path. It sits in the `SKILL.md` as plain text, and a reviewer reading the file can catch it. The environment variable can be dangerous because nothing in the package announces the associated dependency, meaning the skill runs fine right up until the step that needs the variable, and only then does it fail. This is why it can cost three people two hours to fix.
+
+> [!Caution] 
+> What to Watch Out for
+>
+> Any path reference in a skill, hook command, or plugin component must be relative to the project root or use an environment variable for the base path. Use `$CLAUDE_PROJECT_DIR` to reference scripts stored in the project, and `${CLAUDE_PLUGIN_ROOT}` for scripts bundled inside the plugin itself, so the path resolves correctly no matter whose machine runs it or what directory the session started in. Make sure any scripts, config files, or other assets the plugin depends on are either bundled inside the plugin or included in a shared project location, so every teammate can access the same files after install. Document every environment variable the plugin requires and validate it at install time so a missing one surfaces immediately instead of mid-run. Then test the install on a clean machine before distribution; this will catch any issues that the build machine may be hiding.
+
+## MCP Servers
+
+### Building and configuring an MCP server: transport, scope, and the GitHub server
+
+<span style="font-size: 1.25em;">_Prior sections introduced plugins as the packaging layer that bundles skills, hooks, subagents, and MCP servers into a single installable unit._</span>
+
+This section further explains what MCP server bundles are and how to build them. An MCP server is the layer that exposes tools to Claude from outside your codebase. When building an MCP server, one of the first decisions is determining the appropriate transport mechanism and defining the server’s scope.
+
+### What is an MCP server and why is it different from wiring a tool directly?
+
+When wiring a tool directly into an application, you are responsible for defining the tool’s schema and its functionality. Both live in that application’s code. If three different applications need access to the same external service, each one maintains its own integration. Model Context Protocol, or MCP, separates tool definitions from individual applications and turns them into a process called a server.
+
+An MCP server is a process that exposes tools, resources, and prompts that MCP clients can use. Claude Code has a built-in MCP client. When you connect to an MCP server, Claude Code discovers the tools it provides and can invoke them during a session. With an MCP server, you build the capability once, and every MCP client that connects to it gets access without re-implementing the integration.
+
+#### MCP servers also expose resources and prompts
+
+An MCP server exposes tools, resources, and prompts. We’ve already learned about tools: actions the model can call. The other two cover cases where a tool call won’t give you what you need.
+
+A resource is read-only data the server exposes for the client to fetch and place into context directly, rather than the model calling a tool to get it. The client requests a resource by its address, and the server returns the data. Resources come in two forms: a direct resource has a fixed address for data that takes no parameters, such as a list of available documents, and a templated resource puts a parameter in the address, such as a document address that takes a document identifier. Reach for a resource when you want known data to be in context from the start of a turn. You want this when pulling a resource in directly is cheaper and more predictable than using a tool call to go get it. Resource support varies across MCP clients; verify that your client has a mechanism to inject resources into context before relying on this pattern.
+
+A prompt is a pre-written instruction template the server exposes so a client can invoke a vetted prompt by name instead of asking each user to write their own. A user can already ask the model to do most tasks in their own words, so a prompt is useful when specific wording is needed: a task where a carefully built instruction produces materially better results than whatever a user would type, and where you want every client to get the same quality. Packaging the instruction on the server means the prompt is maintained in one place and reused everywhere the server is connected.
+
+#### Transport: how Claude Code talks to the server
+
+Transport is the communication channel between the MCP client and the MCP server. The right transport depends on where the server runs. Select each tab for what it is and when to use it.
+
+<div class="jb-tabs-container">
+<input type="radio" class="jb-r1" name="jb-tab-group-5" id="g5-tab1" checked>
+<input type="radio" class="jb-r2" name="jb-tab-group-5" id="g5-tab2">
+<input type="radio" class="jb-r3" name="jb-tab-group-5" id="g5-tab3">
+
+<div class="jb-tabs-header">
+<label class="jb-tab-label jb-l1" for="g5-tab1">stdio</label>
+<label class="jb-tab-label jb-l2" for="g5-tab2">HTTP</label>
+<label class="jb-tab-label jb-l3" for="g5-tab3">SSE</label>
+</div>
+
+<div class="jb-tab-content">
+
+<div class="jb-tab-panel jb-p1" id="g5-content1">
+<p>
+<strong>stdio</strong> runs the server as a local process on the same machine as the client. The client launches the server as a subprocess and communicates through standard input and output. This is the correct choice for a local tool, a personal script, or a development server you run on your own machine. It does not work for a server you want to share across your team or host remotely.
+</p>
+</div>
+
+<div class="jb-tab-panel jb-p2" id="g5-content2">
+<p>
+<strong>HTTP</strong> is the recommended form of transport for any server that does not run locally. It connects over a standard HTTP connection and supports servers hosted on a different machine. When you register an HTTP server, you provide the URL and the client connects over the network. Shared team servers and hosted integrations use HTTP.
+</p>
+</div>
+
+<div class="jb-tab-panel jb-p3" id="g5-content3">
+<p>
+<strong>SSE (Server-Sent Events)</strong> is an older means of transport that predates the current HTTP transport. It has been superseded by HTTP transport and is no longer recommended for new servers. If you encounter SSE in existing configuration or documentation, treat it as a legacy option rather than a current recommendation.
+</p>
+</div>
+
+</div>
+</div>
+
+### Context cost
+
+Each connected MCP server contributes tool definitions that would occupy the context window if loaded upfront. By default, Claude Code defers these definitions rather than loading them upfront, and it uses a search step to discover and load the relevant tools only when a task calls for them. Only the tools called for enter context.
+
+An opt-in mode loads tool definitions upfront when they fit within roughly 10 percent of the context window, deferring only when that limit is exceeded. Either way, connecting only the servers you need keeps each request lean, because every connected server adds to the pool of definitions the model has to account for.
+
+### Prompt caching: paying once for reusable requests
+
+The context-cost problem you just saw with MCP servers has both a cost and window dimension. Every request reprocesses its input from scratch, including the parts that were identical on the last request, meaning that you pay for reprocessing each time. Prompt caching can stop you from paying twice for the same stable content.
+
+Caching stores the processing work done on a stable prefix of your request so a follow-up request can reuse it instead of reprocessing the same tokens. The first request writes the prefix to the cache, and follow-up requests send identical content up to the same point in the cache at a fraction of the cost. The content must match exactly: a single changed character before the cache point invalidates that cache and forces a fresh write. That is why the strongest candidates for caches are the parts of a request that rarely change, such as a long system prompt, a large set of tool definitions, or a reference document you ask several questions about.
+
+You turn on caching by marking a cache breakpoint; there is no global setting that turns caching on. In the Messages API you add a `cache_control` field of type `ephemeral` to the last block you want cached; this caches everything up to and including that block. You can place up to four breakpoints. The request is processed in a fixed order of tools, system prompt, and messages, so a breakpoint after the tools caches the tool definitions while keeping the messages dynamic.
+
+The cache has a time limit. The default cache lifetime is five minutes from the last read. An opt-in one-hour lifetime is available by setting a `ttl` of `1h` on the breakpoint. The five-minute default suits a back-and-forth model where requests arrive every few minutes, since each read resets the clock. The one-hour option suits a workload with longer gaps between requests, such as an agent that pauses between steps, where the five-minute window would expire before the next request. If the window expires before the next request, you are left paying the write cost again for no read benefit. Please note that caching only applies above a minimum token threshold (1,024 tokens for most current models) so short prompts will not be cached even if a breakpoint is set.
+
+### Retrieval-augmented generation: how Claude pulls in only the knowledge a request needs
+
+The context-cost problem you just saw with MCP servers is the same one a large body of reference material creates. A model reads everything in its context window for every request, so the more documents you load up front, the more context is used, and the less room is left for the work. Retrieval-augmented generation, usually shortened to RAG, is the pattern that resolves this. Instead of loading every document into context, the system stores the material outside the context window, finds the parts most relevant to the current request, and supplies only those parts to the model at request time. The model then generates its answer from that retrieved slice rather than from the whole library.
+
+#### RAG comes in two forms:
+
+**Classical RAG** does the hard work upfront. Before anyone asks a question, the source material gets split into chunks, and each chunk is converted into a set of numbers (called an embedding) that captures its meaning mathematically. Those numbers are stored in a database. When a user asks a question, the system converts the question into the same type of numbers, then finds whichever chunks have the most similar numbers. Think of it like a librarian who, before the library opens, has already read every book and written a precise summary card for every chapter, so when you arrive with a question, they can pull the right cards instantly.
+
+**Agentic search** skips the upfront indexing entirely. There’s no pre-built database. Instead, the model figures out what it needs the moment you ask, then goes and fetches it: searching live sources, reading documents on demand, pulling in results as the task unfolds. Think of it like a researcher who, when you ask a question, goes and finds the answer themselves rather than consulting pre-prepared cards.
+
+You may have already encountered agentic search without knowing its name. In Claude Code, when you’re connected to many external tools (MCP servers), Claude doesn’t load every tool definition up front; that would be too much to hold at once. Instead, it discovers and loads only the tools it needs for the current task. `Claude.ai` Projects works the same way for uploaded documents: when a project’s knowledge base grows larger than can fit in the active window, it surfaces only the document sections most relevant to each question rather than loading everything.
+
+Both approaches do the same fundamental thing; they both find a relevant slice of material and generate from it. The difference is timing: classical RAG finds the slice by matching against an index built in advance; agentic search finds it by searching at the moment of need.
+
+Two properties of retrieval are worth understanding before you reach for it:
+
+* **It scales.** As your source material grows, the cost of each request stays flat, because the model only ever receives the slice relevant to that question, not the entire library. A knowledge base can grow to thousands of documents and a single question still pulls back roughly the same amount of text. That’s what lets retrieval work at scale: the source can keep growing without the request growing with it.
+* **It’s only as good as what it finds.** The model reasons over the slice it receives. If the retrieval step misses the document you needed, the model never sees it. This means that how you organize your material is important: files with vague names (`“notes_final_v3.pdf”`) are harder to surface than files with descriptive ones (`“Q3 refund policy, updated August 2024”`). Grouping related files together helps too. Good retrieval starts with a well-organized source.
+
+### Configuration scope: who loads the server
+
+The scope determines which users and projects load the server. Each scope corresponds to a different configuration location.
+
+* **Local scope** stores the server configuration in `~/.claude.json` under the current project’s path. It applies only to the project you are currently working on and is not shared with teammates. This is the right scope for a server tied to a specific project context that you are not ready to commit to the repository, or for tooling that only makes sense in one project.
+* **User scope** stores the server configuration in your personal Claude settings and makes it available across all your projects. It is still personal: teammates do not see it, and it is not written into the repository. This is the right scope for a personal utility you use in every project, such as a local database tool or a script you rely on regardless of which codebase you are working on.
+* **Project scope** writes the server configuration to a `.mcp.json` file at the root of the repository. When that file is committed to version control, everyone who clones the repository gets the same server automatically. This is the right scope for a server the whole team can access, because the configuration travels with the code. One thing to keep in mind: a project-scoped server runs from each teammate’s machine. For a stdio server, the committed configuration stores the launch command, and every clone spawns its own local subprocess, so each teammate needs the runtime (such as Node for an npx-launched server) installed locally.
+* **Enterprise scope** deploys through a centrally managed configuration controlled by an administrator. Administrators can push servers to all users in the organization without individual configuration steps. This is the right scope for shared internal services, security tooling, or any server that must be present across the organization and cannot be left to individual developers to configure.
+
+### Permission rules that target a single MCP tool, not the whole server
+
+Connecting a server exposes its full tool list, but you rarely want the agent to reach every one of those tools without checking. The permission layer from the permission-modes section extends to MCP tools, and the rules can name an individual tool rather than the whole server.
+
+An MCP tool is identified in a permission rule by its server and tool name: `mcp__server__tool`. An allow rule on `mcp__github__create_issue` lets that one tool run without a prompt while every other tool on the GitHub server still prompts. A deny rule on a write-capable tool blocks it while read-only tools on the same server stay available. This is how you connect a broad server but keep the agent inside a narrow slice of what it can do. A deny on one tool overrides an allow on the server.
+
+The API MCP connector is another useful control. If you are reaching the server through the API MCP connector, an mcp_toolset object lets you set an enabled flag per tool. This enabled flag lets you register a server but expose only the specific tools you want the model to see. A permission rule decides whether an exposed tool may run; the enabled flag decides whether the model sees the tool at all. The first is a governance control, the second is a context-cost and scope control. These controls are often used together. Always verify the exact rule syntax and the connector beta header against the documentation before publishing.
+
+#### The GitHub MCP server: transport, scope, and authentication in a concrete example
+
+The GitHub MCP server is a remote server maintained by GitHub that exposes tools for repository management including reviewing pull requests, opening issues, searching code, and more. By walking through the connection process, you can see how transport, scope, and authentication work together in a server maintained by someone else.
+
+The GitHub server uses HTTP transport because it is hosted remotely by GitHub. You register it by providing the server URL, and the client connects over the network. For scope, choose project scope when your whole team needs access to the same repository tooling, and local scope when only you need access to the server.
+
+Authentication for the GitHub MCP server uses a Personal Access Token. You generate the token in GitHub, then pass it as a Bearer token in the request header of your MCP configuration. The token must be supplied through an environment variable and referenced in the configuration file. It must not be committed inline to `.mcp.json`, because a token written directly into a committed file enters repository history and cannot be removed by overwriting the file in a later commit.
+
+OAuth is a different authentication mechanism, used by servers where the service authenticates individual users through a browser-based sign-in flow. Linear is an example of a server that uses this pattern. When you connect to a Linear MCP server for the first time, the client redirects to Linear’s sign-in page. After you approve access, a token is issued and stored automatically. No credential is copied or managed by hand. OAuth is the right pattern for any integration where the service’s authorization model is tied to user identity.
+
+GitHub MCP uses a service credential you generate and store; Linear MCP initiates a sign-in flow that handles the credential for you. Both are remote HTTP servers, and both follow the same transport and scope logic. The authentication step is what differs.
+
+### The MCP setup reference
+
+The table below captures transport and scope decisions for each deployment context.
+
+| Context | Transport | Scope | Config location | Secrets handling |
+| :-- | :-- | :-- | :-- | :-- | 
+| Personal local tool (runs on your machine only) | stdio | Local | `~/.claude.json` (per-project entry) | Environment variables only. Never in config file. |
+| Shared team server (all teammates connect to same service) | HTTP | Project (`.mcp.json`) | `.mcp.json` committed to repo root | OAuth or env variables. API keys must never be committed to `.mcp.json`. |
+| Personal experiment (not ready to share) | stdio or HTTP | Local | Personal Claude settings | Environment variables only. |
+| Organization-wide deployment (admin-managed) | HTTP | Enterprise | Managed settings (admin-controlled) | Secrets managed by administrator. Config locked to prevent override. |
+
+> [!Tip]
+> Cost · Complexity · Risk
+> **Cost:** Each connected MCP server adds its tool definitions to the context window. The more servers connected, the larger every request. Load only the servers a given task needs.
+>
+> **Complexity:** Transport and scope are independent decisions, but they interact: a stdio server cannot be project-scoped for sharing because it runs only on one machine. Match transport to where the server runs before choosing scope.
+> 
+> **Risk:** Committing an API key inside .mcp.json to version control is the most common mistake in this section. The key travels into repository history where rotating later is not sufficient to remove the exposure. Secrets go in environment variables. The configuration file holds only the server address.
+
+> **Handles well**
+> A reusable integration you want to use across multiple Claude Code sessions and share with the team, where the capability is stable enough to maintain as a separate process. The GitHub server is a great example.
+> 
+> **Adds cost or complexity**
+> Teams that are not managing environment secrets carefully should be watched closely. Adding MCP servers increases the number of places a secret could be mishandled. The risk concentrates on the .mcp.json file, which is committed to the repository.
+> 
+> **Use a different approach**
+> A one-off task where the tool logic can live directly in the codebase and does not need to be reused across sessions or applications. For a single-project integration used by one person, wiring the tool directly in the API call may be simpler than maintaining a server.
+
+### The API key that traveled with the configuration file into the repository
+
+> [!Tip]
+> Setup
+>
+> The server was working, the team needed a shared setup, and cleaning up the authentication method felt like something you could do after the handoff. That shortcut turned a temporary hardcoded API key into a shared credential exposure the moment the configuration file was committed.
+
+#### What happened
+
+A developer connected to a data warehouse MCP server using a service account API key. To get the server working quickly during setup, the key was placed directly in the `.mcp.json` configuration file. The plan was to move it to an environment variable before sharing the setup with the team.
+
+The developer committed the `.mcp.json` to the project repository so teammates could connect to the same server by cloning the repo, and the key committed along with it. Within 48 hours, three teammates had cloned the repository, and a CI pipeline had triggered a fresh clone. The key was now in four places: the local machine, the repository history, the three teammate machines, and the CI runner’s file system.
+
+After realizing this, the developer moved the key to an environment variable, updated the `.mcp.json`, and committed the corrected file. But the key was still in the commit history, and the service account had to be rotated. The rotation broke two external services that had been configured with the same key, and this took three hours of work to fix.
+
+The corrected `.mcp.json` uses an environment variable reference instead of an inline value:
+
+Before (do not use)
+
+```json
+{
+  "type": "http",
+  "url": "https://warehouse.internal/mcp",
+  "headers": {
+    "Authorization": "Bearer sk-abc123..."       .............inline credential
+  }
+}
+```
+
+After (correct)
+
+```json
+{
+  "type": "http",
+  "url": "https://warehouse.internal/mcp",
+  "headers": {
+    "Authorization": "Bearer ${WAREHOUSE_MCP_TOKEN}"    ............env variable reference
+  }
+}
+```
+
+> [!Caution]
+> What to Watch Out for
+>
+> API keys committed to a configuration file are committed to repository history. Overwriting the file in a later commit does not remove the key from history; it only removes it from the current version. Any credential written inline in a committed file must be treated as compromised and rotated. The correct pattern is to put the value in an environment variable and reference the variable in the configuration file.
+> 
+> To prevent the agent from writing credential values directly to committed files, use two layers. First, add a convention instruction to `CLAUDE.md` stating that credential values must never be written inline to `.mcp.json`. This signals the rule to the model during each session. Second, back that instruction with a `PreToolUse` hook that inspects write and edit operations against `.mcp.json` for patterns that look like inline credential values and exits with code to block the operation if one is detected. The `CLAUDE.md` instruction communicates the intent; the hook enforces it deterministically regardless of what the model decides to do. This is the same hook-versus-instruction distinction covered in the durable project context section: an instruction in `CLAUDE.md` can be followed inconsistently when the file grows or context shifts, and a hook fires at every relevant tool call without exception.
+
+## Enterprise Integration
+
+### Connecting Claude to enterprise systems and authenticating it securely
+
+<span style="font-size:1.15em;">_Earlier the module covered how to build an MCP server and configure its transport and scope. For a server used only by your team on an internal project, the GitHub personal-access-token example covers the authentication pattern._</span>
+
+This section covers what changes when the integration must work in a regulated environment: the identity, secret-handling, and data-residency questions that a prototype usually ignores become requirements that must be answered in the production deployment.
+
+### Why enterprise integration is different from a working prototype
+
+A prototype that connects Claude to an internal service answers one question: does the connection work? A production enterprise integration must answer several additional questions: Who is the model acting as, and is that identity auditable? What data can it access, and where does that data leave the organization? Can an administrator lock the configuration so no individual developer can change the authentication setup? Can the access be logged in a way that satisfies a compliance audit?
+
+These questions are not new to enterprise software; they have the same identity, access, and compliance requirements that apply to any external system touching regulated data. Treating them as part of the integration design is what separates a demo from something deployment-ready.
+
+### Authentication patterns by service type
+
+The right authentication mechanism depends on where the service runs and what identity model it supports. Select each tab for the pattern and when to use it.
+
+<div class="jb-tabs-container">
+<input type="radio" class="jb-r1" name="jb-tab-group-6" id="g6-tab1" checked>
+<input type="radio" class="jb-r2" name="jb-tab-group-6" id="g6-tab2">
+<input type="radio" class="jb-r3" name="jb-tab-group-6" id="g6-tab3">
+
+<div class="jb-tabs-header">
+<label class="jb-tab-label jb-l1" for="g6-tab1">Remote Services with User Identity</label>
+<label class="jb-tab-label jb-l2" for="g6-tab2">Remote Services with Service Identity</label>
+<label class="jb-tab-label jb-l3" for="g6-tab3">Local Services with file-system access</label>
+</div>
+
+<div class="jb-tab-content">
+
+<div class="jb-tab-panel jb-p1" id="g6-content1">
+<p>
+<strong>Use OAuth.</strong> The MCP server returns a 401 Unauthorized to signal that authentication is required. The client initiates a browser-based sign-in flow. After the user approves access, a token is issued and stored. No one copies a secret by hand; the OAuth flow is the expected pattern for cloud services, SaaS tools, and any integration where the user’s identity is part of the authorization model. The Linear MCP server from earlier in this module uses this pattern; the GitHub server, by contrast, authenticates with a personal access token passed as a header.
+</p>
+</div>
+
+<div class="jb-tab-panel jb-p2" id="g6-content2">
+<p>
+<strong>Use an API key passed through an environment variable.</strong> The key identifies the service account. The key must never be committed to a configuration file; it lives in the environment at the point of execution. For a CI pipeline using the Agent SDK, the key is injected as a secret by the pipeline runner, not baked into the code.
+</p>
+</div>
+
+<div class="jb-tab-panel jb-p3" id="g6-content3">
+<p>
+<strong>stdio transport</strong> with no network authentication. The security boundary is the file-system permission model. A denying rule in the settings files is the governance layer.
+</p>
+</div>
+
+</div>
+</div>
+
+Managing the secret itself is the other half of secure authentication. A credential never travels with the configuration that references it: the config file holds only a variable reference, and the value lives in an environment variable or a managed secret store injected at the point of execution. Store service-account keys in a secret manager rather than in files, and rotate them on a schedule and immediately after any suspected exposure. If a key is leaked, you must rotate it, but remember, you cannot rotate a value baked into committed code. Scope each credential to the narrowest access its task needs, so a compromised key reaches only what that one integration required.
+
+### Managing the secret after authentication: storage, rotation, and separation from config
+
+Choosing the right authentication pattern establishes the connection, but keeping it is a separate problem. The MCP key leak mentioned earlier was not a bad choice of auth method, it was a credential that lived in the wrong place and could not be cleaned up once it spread. Three practices keep that from happening, and each one addresses a specific way a credential gets exposed.
+
+The first practice is **separation**: a credential never travels with the configuration that references it. The configuration file holds a variable reference, and the value lives somewhere the file does not. This is the rule the leaked-key failure broke. The reason it matters is mechanical: configuration files get committed, shared, and cloned. A value written inline rides along with every one of those copies, and a committed value enters repository history in a way that overwriting does not remove. If you keep the value out of the file, then the file stays safe to share.
+
+The second practice is **where the value goes** once it is out of the file. For a value that lives only on one machine or in one pipeline run, an environment variable injected at the point of execution is enough: the CI runner sets it as a secret, the configuration reads it by name, and nothing is written to disk. For a value that several services or people need, a secret store is better. A secret store is a managed service that holds credentials, returns them to authorized callers at runtime, and records who read what. It centralizes the value so a single rotation updates every consumer at once, and it removes the copies that accumulate when each service keeps its own credential in its own file. Reach for an environment variable when the secret is local and short-lived, and a secret store when the secret is shared or must be audited.
+
+The third practice is **rotation**: replacing a credential with a new one on a schedule and immediately after any suspected exposure. Rotation is the only appropriate response to a leaked key, because a key that has been exposed cannot be made secret again. You must issue a new one. This is why the inline-credential pattern is so costly: a value baked into committed code cannot be rotated cleanly, since the old value stays in history and every consumer hardcoded to it breaks upon change. A credential read from a secret store or an environment variable rotates without touching the code that uses it, because the code references the value by name and the name does not change when the value behind it does.
+
+Two habits can make rotation cheaper: scope each credential to the narrowest access its task needs, so a key that leaks reaches only what that integration required. Keep a record of which services use each credential, so a rotation does not surface its consumers.
+
+The leaked-key failure earlier in the module identified the mistake: a credential written inline to a committed file. To prevent this from happening, apply these three practices: separation keeps the value out of the file, a secret store or environment variable gives the value a home that the file does not share, and rotation can help with recovery only when the first two are held.
+
+### What regulated industries add on top of working authentication
+
+A financial services or healthcare customer asks more questions than “does authentication work?” They ask where data is processed, how access is logged, and whether an administrator can lock the configuration so a developer cannot change the auth setup during an audit window.
+
+The enterprise managed configuration from earlier sections answers the last question: an administrator-deployed server configuration that cannot be overridden by individual users means the auth setup is consistent across the organization and does not depend on each developer’s settings file being correct.
+
+Audit hooks answer the logging question: a PostToolUse hook that logs every tool call and its parameters to an audit store provides the record a compliance review needs. The hook fires deterministically for every call, regardless of what the model decides, and the log is not something the model can skip.
+
+Data residency answers the processing question: a server configured with an HTTP endpoint in a specific region, combined with a platform deployment that pins processing to that region, gives a compliance reviewer a checkable answer to where data goes. This is why the infrastructure requirement and the platform choice from earlier in the module matter at audit time, not just at build time.
+
+### Code modernization: applying the full module to legacy change
+
+Code modernization is a useful test case for everything this module covers, because it concentrates on the risks each tool was designed to manage. Large-scale changes to an unfamiliar legacy codebase carry high blast radius, unpredictable dependencies, and limited reversibility. The tools from this module address each of those risks directly when you apply them before the work starts. The explore, plan, and code loop is the core workflow for this type of work. Plan mode holds the agent in the read-only explore phase while you build confidence in its changes. You can review the proposed edits, identify anything that touches paths you did not expect, and push back before a single file is modified. Hooks enforce guardrails that prevent edits to specific paths during the most sensitive phases. CLAUDE.md carries the conventions for the new target patterns, so the agent applies them consistently across the full scope of changes rather than drifting back to the legacy patterns it reads in the surrounding code.
+
+A responsible scoping approach for high-risk work addresses three questions before the session starts.
+
+* What is the blast radius if something goes wrong: which systems depend on the code being changed, and what breaks downstream if an edit is wrong?
+* How are changes audited: is there a PostToolUse hook logging every tool call, and does that log satisfy whoever needs to review what the agent touched?
+* Who approves each phase before the next one begins? Plan mode enforces the boundary between exploration and execution, but the approval decision itself is yours to define and document before work begins.
+
+These questions are not specific to modernization work. They apply to any high-risk agentic task. Code modernization surfaces them clearly because the scope is large, the codebase is unfamiliar, and the cost of getting it wrong is high.
+
+### The authentication and integration checklist
+
+The table below names the key decisions for each service type.
+
+| Service type | Auth method | Where secrets live | What gets logged | Who can lock the config |
+| :-- | :-- | :-- | :-- | :-- |
+| Remote with user identity (SaaS, cloud) | OAuth | Token issued by OAuth provider and stored by client. | PostToolUse hook to audit log. | Administrator via enterprise managed settings. |
+| Remote with service identity (internal API) | API key in environment variable | Environment only. Never in committed config. | PostToolUse hook to audit log. | Administrator via enterprise managed settings. |
+| Local (file system, local DB) | File-system permissions | No credential needed. Deny rules enforce path access. | PostToolUse hook to audit log. | Deny rules in enterprise managed settings. |
+
+> [!Tip]
+> Cost · Complexity · Risk
+>
+> **Cost:** OAuth flows add a one-time setup step per user per service. API key management requires a secret rotation process, and audit logging through PostToolUse hooks adds a small overhead to every tool call.
+> 
+> **Complexity:** Regulated environments add requirements that don’t appear in a prototype. Identifying them during scoping is the discipline that keeps integrations on schedule.
+> 
+> **Risk:** The risk concentrates when a prototype moves toward production. A system that uses hardcoded credentials, has no audit log, and cannot be centrally locked will not pass a regulated customer’s security review. The fixes are not hard, but they require attention before the review.
+
+> **Handles well**
+> Any integration that touches data a regulated customer cares about, where the same tooling already supports enterprise managed settings and audit hooks. Scoping the security requirements up front adds little overhead and prevents the integration from stalling at the final review.
+> 
+> **Adds cost or complexity**
+> Teams that are not familiar with OAuth flows or enterprise secrets management. These patterns require coordination with security or IT teams in most regulated organizations, and the timeline needs to account for that.
+>
+> **Use a different approach**
+> A prototype or proof of concept that will never see production data. The full enterprise integration checklist is not warranted for a demo-only integration but applying the environment variable habit for secrets costs nothing and is good practice.
+
+### The OAuth connection that worked in staging and failed in production
+
+> [!Tip]
+> Setup
+>
+> The OAuth connection worked end to end in staging, so moving it to production felt like a routine cutover. What the team missed was that OAuth redirect URIs are registered per host and often governed per environment, so success in staging did not mean the production host was authorized to complete the sign-in flow.
+
+#### The conversation that surfaced the missing step
+
+The following exchange occurred in a post-deployment review after MCP integration failed in production. The integration had passed all staging tests.
+
+> Security reviewer: "Every production sign-in attempt through the MCP connection is failing. The error is a redirect URI mismatch. Where was the OAuth app registered?"
+> 
+> Developer: "I registered it for staging.mycompany.com during development. We moved to production last week. The connection worked all through staging."
+> 
+> Security reviewer: "That's the issue. The OAuth provider only accepts redirect URIs you've explicitly registered, and production.mycompany.com is not on the allowed list. Every sign-in attempt hits the check, fails the URI match, and loops back to the sign-in screen."
+> 
+> Developer: "So I just need to add the production URI to the app registration?"
+> 
+> Security reviewer: "Yes, and before you do, check whether your staging app registration should be a separate app from production. Most enterprise customers require separate OAuth app registrations for each environment as part of their security policy, so using the same app registration across environments is the second issue I'd flag."
+
+The developer had tested the OAuth flow end to end in staging and confirmed it worked, meaning the production failure was not a code defect. Instead, it was a configuration step that applies per host and per environment, and the developer had not known to do it for production.
+
+What to Watch Out for
+OAuth redirect URIs are registered per host, so a working staging OAuth connection does not mean the production connection is configured. Before moving any OAuth-authenticated MCP integration into a new environment, add the new host’s redirect URI to the OAuth app registration. For regulated enterprise customers, verify whether separate OAuth app registrations are required for staging and production. Include the registration step in the deployment checklist so it is not discovered at the first production sign-in attempt.
