@@ -328,7 +328,7 @@ Three features extend plain text generation: **Skills** (consistent procedures),
 
 ### 4.4 Scenario: Monthly Regulatory Tracking Report
 
-**Before (months 1–2, in Chat):** each session she uploaded regulatory docs, re-pasted portfolio context, re-typed format instructions, and verified every number. Caught 2 errors in month 1 and 1 in month 2, all before release.
+**Before (months 1–2, in Chat):** each session an analyst uploaded regulatory docs, re-pasted portfolio context, re-typed format instructions, and verified every number. Caught 2 errors in month 1 and 1 in month 2, all before release.
 
 **After (month 3, capability layer):**
 - Portfolio context + standing format instructions → **Project**
@@ -360,9 +360,9 @@ Goal: avoid **over-engineering routine work** and **under-resourcing high-stakes
 
 | Model | Profile | Use for |
 | :-- | :-- | :-- |
-| **Haiku** | **Fastest, most efficient** (token use). Good with structured tasks. | **Classification, extraction, formatting, straightforward summarization, high-volume routine work** where speed matters and **cost of an imperfect output is low**. Speed advantage **compounds** across hundreds of items. |
-| **Sonnet** | **Balanced** tier; strong quality across task types. | **Drafting, synthesis, analysis, research assistance, document review.** **Right starting point for most knowledge work.** |
-| **Opus** | **Higher capability** than Sonnet and Haiku; slower. | **Nuanced judgment, complex multi-step reasoning, ambiguous inputs, quality over speed.** Client-facing deliverables, complex document analysis, strategic planning, high-stakes multi-source synthesis. |
+| **Haiku** | **Fastest, most efficient** (token use). Good with structured tasks. | **Classification, extraction, formatting, straightforward summarization, high-volume routine work** where speed matters and **cost of an imperfect output is low**. Speed advantage **compounds** across hundreds of items.<br/>**Examples:** Tagging incoming BFSI customer support emails by category (loan inquiry, KYC update, complaint) across thousands of messages a day; extracting policy numbers and premium amounts from insurance claim forms. |
+| **Sonnet** | **Balanced** tier; strong quality across task types. | **Drafting, synthesis, analysis, research assistance, document review.** **Right starting point for most knowledge work.** <br/>**Examples:** Drafting a first-pass credit memo from a borrower’s financial statements; reviewing a vendor contract against your standard clauses before it goes to legal. |
+| **Opus** | **Higher capability** than Sonnet and Haiku; slower. | **Nuanced judgment, complex multi-step reasoning, ambiguous inputs, quality over speed.** Client-facing deliverables, complex document analysis, strategic planning, high-stakes multi-source synthesis.<br/>**Examples:** Analyzing a regulatory change such as an RBI circular against your lending products and recommending a compliance plan; synthesizing conflicting data from audit reports, market research, and internal risk models into a board-ready strategy paper. |
 
 **Movement rules**
 - Start with **Sonnet**.
@@ -806,7 +806,7 @@ Most weak prompts are **missing one or more components**. Naming them turns prom
 | 4 | **Constraints** | Boundaries: **length, tone, what to include, what to leave out, what to avoid** | Keeps output **usable without heavy editing** | |
 | 5 | **Output format** | Shape of the result: table, bullets, 3-para memo, draft email | Stating it **up front saves an iteration** | |
 
-**Mnemonic: C·T·R·O·C ("See-Troc")** = **C**ontext · **T**ask · **R**ole · **O**utput format · **C**onstraints
+**Mnemonic: C·T·R·O·C ("See-Troc")** = **`C`**ontext · **`T`**ask · **`R`**ole · **`O`**utput format · **`C`**onstraints
 
 ### 2.2 How Many Components?
 
