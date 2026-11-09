@@ -26,13 +26,15 @@ A useful design document holds four decisions, each stated concretely enough tha
 
 If you build an agentic coding tool, this document is also what you hand in before it writes anything. Plan the work first and capture the result as a written artifact, then implement against it. A tool given clear success criteria and explicit constraints makes fewer assumptions and produces code you can check against the document you already agreed on. The rest of this module teaches each of the four decisions in turn, and the cumulative task at the end asks you to harden a system against all four at once.
 
-An eval is the test set that defines what a feature must do before it ships
+### An eval is the test set that defines what a feature must do before it ships
+
 An eval works the way a thermometer does. It does not make the patient healthier. It just gives you a number you can trust. Before you have one, "done" is a feeling. After, it is a score on a fixed set of cases.
 
 You collect a set of input cases. For each one you write down the behavior you expect. You run the feature on every case and grade the output against that expected behavior. The collection of cases, expectations, and grades is the eval. "Done" stops being a feeling after a few manual tries and becomes a score. You write the eval before the feature because it forces you to define success before implementation begins. Otherwise, you may find yourself rationalizing whatever output the model produces later.
 
 The pipeline is small and requires the same framework every time: load a dataset of cases, run each case through the feature, grade each result, and average the scores. A minimal version is only a few functions. The first runs the feature on one case, the second grades that output, and the third loops over the dataset and averages.
 
+```python
 def run_test_case(test_case):
     """Run one case through the feature, then grade the result."""
     output = run_prompt(test_case)
@@ -45,16 +47,21 @@ def run_eval(dataset):
     average = sum(r["score"] for r in results) / len(results)
     print(f"Average score: {average}")
     return results
+```
+
 The score on its own is not inherently good or bad. The first attempt scoring two or three out of ten is normal. What matters is whether the number increases as you change the prompt, the tools, or the model. Change one of these at a time, so that you know which caused the improvement. The eval is the instrument that makes that change measurable instead of a matter of opinion.
 
-Matching the grading method to the shape of the output
+### Matching the grading method to the shape of the output
+
 The grader is the part that turns an output into a measurable signal, usually a number between one and ten. There are three ways to produce that signal, and choosing the wrong one is where eval effort gets wasted.
 
-1Exact or string match works when the output has one correct form. A classifier that must return one label, or a function that must return a known value, can be checked character by character. It is the cheapest grader and the most brittle: any acceptable paraphrase of an open-ended answer fails it. It is the wrong tool anytime the output can be phrased more than one way.
-2Code-graded checks work when a function can validate the output. Valid JSON, parseable Python, a number inside a range, a response that contains a required field: each of these is a check you can write in code that returns a pass or a fail. The output does not have to match a fixed string, only satisfy a rule. This method catches format and syntax failures a string match would miss, and a human would find tedious to check by hand.
-3LLM-as-judge works for open-ended outputs where quality matters but cannot be evaluated through pattern matching. You give a second model the output and a rubric, and it returns a score with reasoning. This is the only method that scales questions like "is this summary faithful?" or "did this answer follow the instructions?" because no code rule captures those. It is also the most expensive and the noisiest, so using it when a code check would suffice adds cost and variance for no gain.
+1. **Exact or string match** works when the output has one correct form. A classifier that must return one label, or a function that must return a known value, can be checked character by character. It is the cheapest grader and the most brittle: any acceptable paraphrase of an open-ended answer fails it. It is the wrong tool anytime the output can be phrased more than one way.
+2. **Code-graded checks** work when a function can validate the output. Valid JSON, parseable Python, a number inside a range, a response that contains a required field: each of these is a check you can write in code that returns a pass or a fail. The output does not have to match a fixed string, only satisfy a rule. This method catches format and syntax failures a string match would miss, and a human would find tedious to check by hand.
+3. **LLM-as-judge** works for open-ended outputs where quality matters but cannot be evaluated through pattern matching. You give a second model the output and a rubric, and it returns a score with reasoning. This is the only method that scales questions like "is this summary faithful?" or "did this answer follow the instructions?" because no code rule captures those. It is also the most expensive and the noisiest, so using it when a code check would suffice adds cost and variance for no gain.
+
 A code grader is often just a parse attempt. If the output parses into the required format, it scores well, while if it throws an error, it scores zero. That is enough to catch a whole class of format failures cheaply.
 
+```python
 import json, ast
 
 def validate_json(text):
@@ -70,22 +77,29 @@ def validate_python(text):
         return 10
     except SyntaxError:
         return 0
+```
+
 Comparing how the same output scores under each method often makes the right choice clear. Imagine a feature that should return the three capital cities of a region as a JSON array. One run returns the array in a different order than your reference string. An exact match scores as zero, because the characters do not line up, even though the answer is correct. A code grader that parses the JSON and checks membership scores it well, because all three cities are present and the structure is valid.
 
 Now imagine the feature should return a one-paragraph rationale for a recommendation. The code grader can confirm it is a non-empty string, which is nearly worthless here, and the exact match is hopeless, because no two good rationales are worded the same. Only a judge can say whether the rationale is faithful and complete. The method follows from the output structure: one correct form takes a match, a structural rule takes a code check, and open-ended quality takes a judge. There is also a cost dimension that the table understates. An exact match and a code check run locally and effectively cost nothing per case, so you can run thousands of them on every change.
 
 A judge is a second model call per case, so a thousand-case eval graded by a judge is a thousand extra API calls every time you run it. That is reasonable for a periodic full evaluation but wasteful as a tight inner loop. Many teams grade format and structure with code on every commit and reserve the judge for a slower, scheduled quality pass. Matching the grader to the task is partially about signal and partially about how often you can afford to run it.
 
-The grader-selection table you can keep open while you build
+### The grader-selection table you can keep open while you build
+
 Of the three methods listed below, the judge is the only one you must build and tune, so it gets its own treatment here.
 
-Task type	Grading method	What it catches	Where it is unreliable
-Single correct label or value	Exact or string match	A wrong answer when there is exactly one correct answer, with zero ambiguity and near-zero cost.	Fails every valid paraphrase or reordering, so it is wrong for anything open-ended.
-Structured or code output	Code-graded check	Invalid JSON, unparseable code, out-of-range numbers, and missing required fields.	Says nothing about whether the content is good, only that it is well-formed.
-Open-ended quality	LLM-as-judge	Faithfulness, instruction following, completeness, and tone that no code rule expresses.	Noisy and costly and produces a confident-looking number that means nothing until it is calibrated.
-Building and calibrating the judge so its scores are defensible
+| Task type | Grading method | What it catches | Where it is unreliable |
+| :-- | :-- | :-- | :-- |
+| Single correct label or value | Exact or string match | A wrong answer when there is exactly one correct answer, with zero ambiguity and near-zero cost. | Fails every valid paraphrase or reordering, so it is wrong for anything open-ended. |
+| Structured or code output | Code-graded check | Invalid JSON, unparseable code, out-of-range numbers, and missing required fields. | Says nothing about whether the content is good, only that it is well-formed. |
+| Open-ended quality | LLM-as-judge | Faithfulness, instruction following, completeness, and tone that no code rule expresses. | Noisy and costly and produces a confident-looking number that means nothing until it is calibrated. |
+
+### Building and calibrating the judge so its scores are defensible
+
 A judge is a second model call guided by a clear rubric. What makes it usable is asking it to provide strengths, weaknesses, and reasoning alongside the score, rather than returning the score alone. Without that, models drift toward a safe middle number, usually around six, regardless of the output's actual quality. Asking the judge for reasoning first is what anchors the score to something specific.
 
+```python
 def grade_by_model(task, solution):
     eval_prompt = f"""
     You are an expert reviewer. Evaluate the solution for the task.
@@ -100,9 +114,12 @@ def grade_by_model(task, solution):
     messages = [{"role": "user", "content": eval_prompt}]
     result = chat(messages)        # returns the JSON above
     return json.loads(result)
+```
+
 Most people skip calibration, which is what makes the judge untrustworthy until they do it. Start with a set of cases a human has already labeled, run the judge on the same cases, and measure how often the judge agrees with the human. A judge that disagrees with human labels half the time produces a number that looks rigorous but provides no value. Measuring agreement before relying on the scores is what turns the judge from a guess into evidence you can defend. If agreement is low, you fix the rubric: tighten what each score means, add an example of a good and a bad answer, and re-measure.
 
-Coverage matters more than perfection
+### Coverage matters more than perfection
+
 A larger evaluation set with slightly noisier automated grading usually reveals more than a small set of hand-graded cases. The point of an eval is to provide enough coverage to catch a regression, not to create the perfect rubric. Twenty cases that include irregular and edge inputs will catch a break that three carefully chosen cases never exercise. When you need more cases, you can have Claude generate additional ones from a small, labeled starting set. You can then spot-check the generated cases so the set stays honest. Coverage is the thing that catches edge cases, and coverage comes from volume.
 
 Put the three pieces together and the workflow is a loop: set a goal, write an initial prompt, run the eval, read where it failed, apply one prompt-engineering change, and run the eval again. You repeat the last two steps until the score holds where you need it. The eval is what tells you a change helped instead of just feeling different.
@@ -111,12 +128,79 @@ The strategy that makes the loop work is changing one component at a time. If yo
 
 A low score is information to act on. When a case fails, the important question is not whether it failed, but why. A formatting failure points at the prompt's output instructions. A factual failure on retrieved content points at the retrieval step. A failure that only appears on long input points at context handling. The eval tells you a case failed, and the per-case output tells you the category, which is what turns the next iteration into a targeted fix rather than a guess.
 
-Handles well
-Turns "looks right" into a tracked score you can defend and move one deliberate change at a time.
+<table style="width: 100%; border-collapse: separate; border-spacing: 16px; border: none; background: transparent;">
+  <tr style="border: none;">
+    <!-- Column 1: Green Card -->
+    <td style="
+      width: 33.33%;
+      vertical-align: top;
+      background-color: #f0f7f4;
+      border: 1.5px solid #2e7d6b;
+      border-radius: 12px;
+      padding: 20px;
+    ">
+      <div style="color: #2e7d6b; font-weight: 700; font-size: 1.15em; margin-bottom: 12px;">
+        Handles well
+      </div>
+      <div style="color: #2b2b2b; line-height: 1.5;">
+        Turns "looks right" into a tracked score you can defend and move one deliberate change at a time.
+      </div>
+    </td>
+    <!-- Column 2: Orange/Amber Card -->
+    <td style="
+      width: 33.33%;
+      vertical-align: top;
+      background-color: #fdf8f2;
+      border: 1.5px solid #c97a48;
+      border-radius: 12px;
+      padding: 20px;
+    ">
+      <div style="color: #c97a48; font-weight: 700; font-size: 1.15em; margin-bottom: 12px;">
+        Adds cost or complexity
+      </div>
+      <div style="color: #2b2b2b; line-height: 1.5;">
+        Authoring cases and calibrating a judge is real up-front work before any feature ships.
+      </div>
+    </td>
+    <!-- Column 3: Red Card -->
+    <td style="
+      width: 33.33%;
+      vertical-align: top;
+      background-color: #fdf2f1;
+      border: 1.5px solid #b8544c;
+      border-radius: 12px;
+      padding: 20px;
+    ">
+      <div style="color: #b8544c; font-weight: 700; font-size: 1.15em; margin-bottom: 12px;">
+        Use a different approach
+      </div>
+      <div style="color: #2b2b2b; line-height: 1.5;">
+        For a single fixed-format output, a code check alone is enough. Skip the judge entirely.
+      </div>
+    </td>
+  </tr>
+</table>
 
-Adds cost or complexity
-Authoring cases and calibrating a judge is real up-front work before any feature ships.
+## Watch Out!
 
-Use a different approach
-For a single fixed-format output, a code check alone is enough. Skip the judge entirely.
+### The demo that passed and the edge case that did not
 
+> [!Tip]
+> You watched the agent answer correctly a dozen times, so you concluded it was done. The problem was that dozen attempts all used inputs that looked like the ones you had in mind when you built it.
+
+**Postmortem: the feature passed every check it had, and still extracted the wrong value**
+
+A team shipped a feature that extracted structured fields from customer messages. Before launch, they ran it through roughly a dozen example messages, read the outputs, agreed they looked right, and moved into deployment. The feature had input validation in place: it confirmed each message was non-empty text, checked that a date field came back populated, and rejected extractions that returned a malformed or impossible date. For two weeks it appeared to work as expected.
+
+Then a customer sent a message that put two dates in one sentence: "I placed my order on March 3 but did not receive it until April 12." The feature extracted April 12 as the order date. Every validation check passed, because both dates are well-formed and the field came back populated. Validation confirms that a value is the right shape. It cannot confirm the value is the right one. Downstream logic acted on the wrong date and a batch of records was updated incorrectly.
+
+The review found no bug in the model or in the prompt. The feature had never been measured against a message containing two dates, because nobody had defined the expected behavior for that case as a graded example. The dozen manual checks all used single-date messages, which is the input the builder pictured. There was no holdout set, so there was no signal that the two-date input existed in the population.
+
+The missing graded set was the root cause. Some behavior change, most likely a prompt change naming which date to extract, corrected the output. The eval did not fix the extraction; it detected the failure, documented the expected behavior as a checkable case, and guarded against the same regression on every future change. The two-date message became case one in that set.
+
+One way to find inputs like this before a customer does: ask the model to enumerate edge cases that could break the current implementation. Two dates in one sentence, no date at all, a relative date like "next Tuesday." Turn the plausible ones into graded cases with a human-checked expected output. This is the same case-generation move the eval-building section covers, applied before launch rather than after.
+
+> [!Caution]
+> <small>Why this broke</small>
+>
+> Success was judged by impression instead of a graded set. The eval is what surfaces failures and guards against regression. The prompt is what changes the output. Write the expected behavior down as graded cases before you ship, and use the model to help you find the edge inputs you did not think to test.
