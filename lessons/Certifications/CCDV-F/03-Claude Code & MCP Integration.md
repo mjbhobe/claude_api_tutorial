@@ -1417,17 +1417,40 @@ The table below names the key decisions for each service type.
 
 The following exchange occurred in a post-deployment review after MCP integration failed in production. The integration had passed all staging tests.
 
-> Security reviewer: "Every production sign-in attempt through the MCP connection is failing. The error is a redirect URI mismatch. Where was the OAuth app registered?"
+> **Security reviewer:** "Every production sign-in attempt through the MCP connection is failing. The error is a redirect URI mismatch. Where was the OAuth app registered?"
 > 
-> Developer: "I registered it for staging.mycompany.com during development. We moved to production last week. The connection worked all through staging."
+> **Developer:** "I registered it for staging.mycompany.com during development. We moved to production last week. The connection worked all through staging."
 > 
-> Security reviewer: "That's the issue. The OAuth provider only accepts redirect URIs you've explicitly registered, and production.mycompany.com is not on the allowed list. Every sign-in attempt hits the check, fails the URI match, and loops back to the sign-in screen."
+> **Security reviewer:** "That's the issue. The OAuth provider only accepts redirect URIs you've explicitly registered, and production.mycompany.com is not on the allowed list. Every sign-in attempt hits the check, fails the URI match, and loops back to the sign-in screen."
 > 
-> Developer: "So I just need to add the production URI to the app registration?"
+> **Developer:** "So I just need to add the production URI to the app registration?"
 > 
-> Security reviewer: "Yes, and before you do, check whether your staging app registration should be a separate app from production. Most enterprise customers require separate OAuth app registrations for each environment as part of their security policy, so using the same app registration across environments is the second issue I'd flag."
+> **Security reviewer:** "Yes, and before you do, check whether your staging app registration should be a separate app from production. Most enterprise customers require separate OAuth app registrations for each environment as part of their security policy, so using the same app registration across environments is the second issue I'd flag."
 
 The developer had tested the OAuth flow end to end in staging and confirmed it worked, meaning the production failure was not a code defect. Instead, it was a configuration step that applies per host and per environment, and the developer had not known to do it for production.
 
-What to Watch Out for
-OAuth redirect URIs are registered per host, so a working staging OAuth connection does not mean the production connection is configured. Before moving any OAuth-authenticated MCP integration into a new environment, add the new host’s redirect URI to the OAuth app registration. For regulated enterprise customers, verify whether separate OAuth app registrations are required for staging and production. Include the registration step in the deployment checklist so it is not discovered at the first production sign-in attempt.
+> [!Caution]
+> What to Watch Out for
+>
+> OAuth redirect URIs are registered per host, so a working staging OAuth connection does not mean the production connection is configured. Before moving any OAuth-authenticated MCP integration into a new environment, add the new host’s redirect URI to the OAuth app registration. For regulated enterprise customers, verify whether separate OAuth app registrations are required for staging and production. Include the registration step in the deployment checklist so it is not discovered at the first production sign-in attempt.
+
+## Key Takeaways
+
+1.  Permission mode is a risk decision, not a speed decision. Claude Code gives you modes ranging from prompt-before-everything to prompt-for-nothing. Permission mode should match the risk profile of the work and environment, not the preference for fewer prompts. A bypass mode on a developer workstation against a live codebase removes every checkpoint between the agent and your files. A deny rule on the path that must not be touched, set at the project or enterprise level, covers the gap that a mode alone does not.
+
+2. An AI code review gives you a set of findings to triage, not a verdict to apply.
+Trust the findings the reviewer can prove from the diff in front of it, like a missing null check or an unclosed resource, and confirm them on the lines it cites. Treat any claim about runtime behavior or another system as a hypothesis to test, because the reviewer made that claim without the evidence that would prove it. Put the human gate at the point where a finding turns into an action that’s hard to reverse and raise the reviewer’s accuracy by giving it the conventions it would otherwise have to guess at.
+
+3. A skill is portable, but “runs everywhere” is something you design for. The same SKILL.md can run in Claude Code, on the Messages API, and through the Agent SDK, but each one loads and sandboxes it differently: filesystem discovery in Claude Code, beta headers and a code execution container on the API, and settingSources on the SDK. A skill scoped to a clear description and free of local-environment assumptions ports cleanly; one that assumes the terminal it was written in does not. In every runtime, subagents start clean: they do not automatically preload skills.
+
+4. Durable context requires the right mechanism for each concern. CLAUDE.md is the session-persistent project memory, but it dilutes with size. Rules files scope guidance to where it applies. Hooks enforce guardrails deterministically, not probabilistically. Subagents keep exploration work out of the main context. These four mechanisms each solve a different problem, so forcing all of them into CLAUDE.md produces a single file that is harder to maintain and easier to ignore.
+
+5. A shareable setup requires portable components. A plugin that references an absolute path to the author’s home directory will install on one machine and fail on all others. Skills, hooks, and plugin components that will be shared must reference paths relative to the project root, and any environment variable requirement must be documented or validated at install time. Test the install from a clean machine before distributing.
+
+6. Transport and scope are independent decisions with dependent consequences. stdio is for servers that run on your machine. HTTP is for anything hosted remotely or accessed by multiple developers. Local scope keeps a server personal; project scope shares it with the repo via .mcp.json. The combination must match the deployment intent: a shared team server requires HTTP transport and project or enterprise scope. A stdio server in .mcp.json is a configuration that looks shareable but is not.
+
+7. Enterprise integration requires identifying the security requirements before deployment.
+A regulated customer asks about identity, data residency, access logging, and configuration control. The answers come from OAuth for user-identity services, environment variables for service credentials, PostToolUse hooks for audit logging, and enterprise managed settings for configuration lock. None of these is hard to implement, but all of them are hard to retrofit after a production deployment has failed a security review.
+
+
+
