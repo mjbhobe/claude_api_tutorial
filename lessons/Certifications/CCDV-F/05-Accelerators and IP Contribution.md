@@ -73,7 +73,7 @@ Keep this checklist next to the build while you package it. Each column is a dec
   </tr>
 </table>
 
-### Watch Out!
+### ⚠️ Watch Out!
 
 **The template that shipped fast and could not be reused**
 
@@ -149,7 +149,7 @@ The example worked here is the customer service agent case. A reusable conversat
   </tr>
 </table>
 
-### Watch Out!
+### ⚠️ Watch Out!
 
 **The pull request a maintainer could not verify**
 
@@ -316,7 +316,7 @@ Gate promotion on the eval suite. Send a new version to a portion of traffic, co
   </tr>
 </table>
 
-### Watch Out!
+### ⚠️ Watch Out!
 
 **The deployment that broke when the model alias moved**
 
@@ -348,5 +348,164 @@ The log
 >
 > An alias resolves to a moving target; a pinned full model ID is a fixed snapshot. Pin the full model ID so an upstream update is something you adopt on purpose. Keep the prior pinned version available so a regression is a rollback rather than a hotfix. Gate the new version through your eval before you promote it, so the output-shape change shows up in a test run instead of in production.
 
+## Comparing Platforms
 
+### Comparing platforms on latency, compliance, and cost so the choice survives review
+
+In the last two screens you chose a platform and pinned its version. That choice was right for the customer's cloud, but "right for their cloud" is not yet an argument a procurement and security team will sign off on.
+
+### Measure latency from the customer's region
+
+Latency depends on where the platform runs relative to the customer and on how access to new features is routed. A platform running in the customer's own cloud region can reduce round-trip time compared to a first-party endpoint located farther away. The trade-off is timing of access: the first-party API typically receives new capabilities before they reach other platforms. The number is only accurate when you measure it from the customer's actual region against their actual payload. A measurement from your laptop hides the round-trip penalty that appears once the workload runs where the customer is. Within Bedrock specifically, the choice between global and regional endpoints is also the primary residency control and can affect cost. You should measure from the customer's actual region against both options before committing.
+
+### Compliance often determines the platform
+
+Compliance is often the dimension that ends the debate. A customer who already holds a certification on one cloud is unlikely to re-certify on another. Data residency is a rule that a customer's data must be processed in a specific country or region. Available compliance certifications and who can audit access differ by platform, and a regulated financial or healthcare customer treats these as pass-or-fail rather than as tradeoffs to balance. The first-party Claude API may not offer EU data residency; confirm current regional coverage at platform.claude.com, since EU-only residency typically requires Bedrock or Vertex AI; on third-party platforms such as Microsoft Foundry, hosting is per-model: Azure-hosted Foundry models run inference end-to-end on Azure infrastructure, while Anthropic-hosted Foundry models do not satisfy EU regional residency requirements. Residency must be confirmed per model and deployment with Microsoft. Raise the compliance constraint during scoping, or it surfaces at contract review after the work is done.
+
+### What drives total cost beyond the per-token rate
+
+Per-token rates are broadly aligned across platforms; total cost moves on egress, platform fees, and integration effort. A lower token price can cost more in total once data transfer and integration are factored in. Instrument cost per call for each platform. Confirm the current pricing pages at scoping.
+
+**The cross-platform comparison reference**
+
+| **Dimension** | **How it differs by platform** | **How to measure it** | **Where each platform wins** |
+| :--- | :--- | :--- | :--- |
+| Latency | A platform in the customer's region shortens the round trip, while the first-party API may reach new features first. | From the customer's actual region against their actual payload. | An in-region cloud platform wins on round-trip latency, while the first-party API is advantaged on earliest feature access. |
+| Compliance | Data residency, certifications, and audit controls are determined by the deployment platform. | Against the customer's existing certification and residency requirements during scoping. | The cloud platform the customer has already certified wins, because it needs no re-certification. |
+| Cost | Token price, data egress, platform fees, and integration effort all vary. | Total cost per call per platform, including egress and integration, rather than token price alone. | The platform with the lowest total cost for the actual workload wins, which is not always the cheapest token. |
+
+<table style="border-collapse: separate; border-spacing: 12px; width: 100%; background: transparent; border: none;">
+  <tr>
+    <td style="width: 33.33%; vertical-align: top; text-align: left; background-color: #e4eeec; border: 1px solid #358173; border-radius: 8px; padding: 16px;">
+      <div style="font-size: 1.05em; font-weight: bold; color: #358173; margin-bottom: 8px;">Handles well</div>
+      <div style="font-size: 0.95em; color: #1f2328; line-height: 1.5;">Measuring all three dimensions per platform turns a placement into one a procurement team will sign off on.</div>
+    </td>
+    <td style="width: 33.33%; vertical-align: top; text-align: left; background-color: #f4ebe4; border: 1px solid #b5652c; border-radius: 8px; padding: 16px;">
+      <div style="font-size: 1.05em; font-weight: bold; color: #b5652c; margin-bottom: 8px;">Adds cost or complexity</div>
+      <div style="font-size: 0.95em; color: #1f2328; line-height: 1.5;">Instrumenting latency, compliance, and cost across platforms requires real measurement work before any code ships.</div>
+    </td>
+    <td style="width: 33.33%; vertical-align: top; text-align: left; background-color: #f7e6e6; border: 1px solid #b8423f; border-radius: 8px; padding: 16px;">
+      <div style="font-size: 1.05em; font-weight: bold; color: #b8423f; margin-bottom: 8px;">Use a different approach</div>
+      <div style="font-size: 0.95em; color: #1f2328; line-height: 1.5;">When the customer's compliance requirement is already pass-or-fail, skip the full comparison. That constraint determines the placement on its own.</div>
+    </td>
+  </tr>
+</table>
+
+### ⚠️ Watch Out!
+
+**The platform picked on familiarity that failed residency**
+
+> [!Tip]
+> **Setup**
+>
+> You picked the platform your team was already familiar with, because the migration looked easy and the deadline was approaching rapidly. It built just fine; the trouble was that easy-to-build and allowed-to-ship are different criteria.
+
+The following anecdote is the kind a developer tells a teammate after a review goes sideways. It lets you see the familiar platform trap before anyone calls it a mistake.
+
+**What happened**
+
+A developer building for a regulated customer chose the platform the team had shipped on before. The integration came together quickly because the team knew the tools and resources. The build passed its functional tests. At the customer's security review, the reviewer asked where data was being processed. The selected platform did not satisfy the customer's residency requirements. A different platform, one the team knew less well, would have satisfied the requirement through regional deployment options the customer had already cleared. The placement was rejected, and the integration had to be rebuilt on the platform that met the residency constraint.
+
+
+> [!Caution]
+> **Why it broke**
+>
+> Familiarity optimized for the wrong test. The easy migration answered whether the team could build quickly. It never answered whether the deployment would pass the customer's residency review, which was the test that determined whether it could ship. Because the compliance requirement was not fulfilled during scoping, it arrived at the go-no-go review instead. This is the most expensive place to discover it, because the build was already complete.
+
+> [!Caution]
+> **What to Watch Out for**
+>
+> A platform that is easy for your team to build on is not necessarily a platform the customer is allowed to run. When the customer is regulated, the residency and compliance constraint is often pass-or-fail, rather than tradeoffs. Identify them early during scoping and let them influence the placement before familiarity does. Checking early costs a scoping conversation, while checking late costs an entire rebuild.
+
+## Trust Boundaries
+
+### Coordinating several Claude deployments with the trust boundaries holding under review
+
+The accelerators, deployments, and tradeoffs now come together in a single application. Connecting components multiplies the places where identity, secrets, and untrusted input can cross. The discipline is to identify every boundary before connecting anything.
+
+Map which component does what before you connect them
+A multi-component app coordinates more than one Claude capability into a single workflow. An API request might trigger a Claude Code task, which then reaches a customer system through an MCP server. Each component contributes a capability the others do not have. The challenge is that every connection between them creates a place where identity, secrets, and untrusted input can cross. Map which component does what before connecting anything.
+
+### The trust boundary is where data moves
+
+The trust boundary is the point where data or instructions move from one deployment environment to another. It is exactly where the injection and access controls from the prior module apply. Content fetched by a Claude Code task is untrusted when it reaches the next component. The receiving component should treat it as data, rather than as instructions, following the same principle used throughout the security module. The core discipline here is to identify every seam as a boundary. Don't assume a component is trusted simply because it worked correctly on its own.
+
+### Least privilege applies to the whole application
+
+Identity and least privilege, which means giving each component only the access its task needs and nothing more, apply to the application as a whole. Each component operates under an identity. The application is only as contained as its most privileged seam, which means a single component scoped too broadly becomes the weak point even when every other component is properly scoped. You scope each component to the least privilege its role in the workflow requires. This is what keeps a steered component from reaching beyond its intended task.
+
+### Scoping for a regulated review pulls the module together
+
+A regulated review requires justifying audit logging, data-residency decisions, and permission controls across the full application. For regulated deployments, Bedrock and Vertex AI are typically the platforms that satisfy regional residency constraints. Confirm ZDR and HIPAA BAA eligibility for each component against the Anthropic Trust Center and platform.claude.com before scoping.
+
+**The multi-component integration map**
+
+| **Component** | **What it contributes** | **The trust boundary at its seam** | **The control that enforces it** |
+| :--- | :--- | :--- | :--- |
+| First-party API | Orchestrates the workflow and holds the entry point. | The request entering the app from outside. | Input validation and the identity the call runs under. |
+| Claude Code task | Runs the agentic work and may fetch external content. | Content it fetched, which is untrusted downstream. | Treat fetched content as data at the next seam. |
+| MCP server | Reaches a customer system to read or act. | The system access it holds on the app's behalf. | Scope the server to least privilege and log the access. |
+
+<table style="border-collapse: separate; border-spacing: 12px; width: 100%; background: transparent; border: none;">
+  <tr>
+    <td style="width: 33.33%; vertical-align: top; text-align: left; background-color: #e4eeec; border: 1px solid #358173; border-radius: 8px; padding: 16px;">
+      <div style="font-size: 1.05em; font-weight: bold; color: #358173; margin-bottom: 8px;">Handles well</div>
+      <div style="font-size: 0.95em; color: #1f2328; line-height: 1.5;">Naming every seam as a boundary and scoping each component to least privilege makes a multi-component app deployable under review.</div>
+    </td>
+    <td style="width: 33.33%; vertical-align: top; text-align: left; background-color: #f4ebe4; border: 1px solid #b5652c; border-radius: 8px; padding: 16px;">
+      <div style="font-size: 1.05em; font-weight: bold; color: #b5652c; margin-bottom: 8px;">Adds cost or complexity</div>
+      <div style="font-size: 0.95em; color: #1f2328; line-height: 1.5;">Mapping seams, enforcing controls at each, and logging boundary crossings adds design and audit work to every integration.</div>
+    </td>
+    <td style="width: 33.33%; vertical-align: top; text-align: left; background-color: #f7e6e6; border: 1px solid #b8423f; border-radius: 8px; padding: 16px;">
+      <div style="font-size: 1.05em; font-weight: bold; color: #b8423f; margin-bottom: 8px;">Use a different approach</div>
+      <div style="font-size: 0.95em; color: #1f2328; line-height: 1.5;">When a seam cannot be secured, do not ship around it: escalate to a human owner.</div>
+    </td>
+  </tr>
+</table>
+
+### ⚠️ Watch Out!
+
+**The seam nobody marked as a boundary**
+
+> [!Tip]
+> **Setup**
+>
+> You connected the components that each passed their own tests. The parts were already checked and connecting verified parts feels safe. Each one was trusted in isolation. The gap was that a seam between two trusted parts cannot automatically be trusted itself.
+
+This is a short transcript from a pairing session, the kind of back-and-forth that ends at the moment the unmarked seam gets identified.
+
+**The session**
+
+
+> **Dev A:** All three components pass their own tests. I just wired them up.
+>
+> **Dev B:** Where does the Claude Code task send what it fetched?
+>
+> **Dev A:** Straight into the next call as part of the prompt. It is just the content we pulled from the customer page.
+>
+> **Dev B:** That content is untrusted. If it carries instructions, the next component runs them, because we never mark that seam as a boundary.
+>
+> **Dev A:** But each component was trusted on its own.
+>
+> **Dev B:** Right, and the seam between them was not. That is the one nobody treated as a boundary, so fetched content crosses as instructions.
+
+> [!Caution]
+> **Why it broke**
+>
+> Each component having passed its own tests said nothing about the seam between them. The fetched content was untrusted the moment it left the Claude Code task. It arrived from a component that worked in isolation and it was passed into the next call as if it were trusted instructions. The boundary existed in the data flow. It just was not marked, so no control checked it. A component that passes its own tests has no seam-level controls. Every point where data crosses between deployment environments requires an explicit boundary control regardless of how each component behaves independently.
+
+> [!Caution]
+> **What to Watch Out for**
+>
+> A component that is trusted in isolation does not automatically make the seam leaving it trustworthy. Mark every place data or instructions cross from one deployment environment to another as a boundary. Put a control there that treats fetched content as data rather than instructions, exactly as the security work taught. The seam nobody identifies is the one a steered action crosses.
+
+## Key Takeaways
+
+| | |
+| :---: | :--- |
+| <span style="color: #D97757; font-size: 1.25em; font-weight: bold;">01</span> | **Package while the build is fresh.**<br>An accelerator keeps the reusable logic, exposes the customer-specific parts as documented parameters, and bundles the eval and the audit log alongside the asset. Correct packaging produces an asset teams configure. The knowledge of what is customer-specific is most expensive to reconstruct after the people who held it have moved on. |
+| <span style="color: #D97757; font-size: 1.25em; font-weight: bold;">02</span> | **A maintainer accepts what they can verify.**<br>Moving an asset into shared infrastructure means matching it to the channel built for its shape, then clearing the review bar: focused code, a runnable example, a test, and a statement of assumptions, with licensing rights confirmed before the technical review. A contribution a reviewer cannot verify sits at the back of the queue. Readiness moves a private asset into shared infrastructure others build on. |
+| <span style="color: #D97757; font-size: 1.25em; font-weight: bold;">03</span> | **Pin what ships.**<br>Choose the deployment platform based on the customer's cloud and compliance posture, then pin the specific model version rather than the moving alias and keep the prior version available. An alias is like asking for the current edition of a book: convenient, but the text can change. Pinning cites a fixed edition, so an upstream model change is something you adopt deliberately rather than something that arrives overnight with no rollback path. |
+| <span style="color: #D97757; font-size: 1.25em; font-weight: bold;">04</span> | **Measure the dimension that decides the placement.**<br>A platform choice is defensible only when latency, compliance, and cost are measured: latency from the customer's region, compliance against their existing certification, and cost as the total per call rather than the token price alone. For regulated customers, compliance is usually pass-or-fail. Raising compliance as a constraint during scoping prevents it from rejecting the build later at contract review. |
+| <span style="color: #D97757; font-size: 1.25em; font-weight: bold;">05</span> | **Mark every seam as a boundary.**<br>A multi-component application is only as contained as its most privileged seam. Scope each component to the minimum access its role requires and treat every point where data crosses as a trust boundary. Fetched content is treated as data, not instructions. Trust at a component boundary must be explicitly established. It does not carry over from the component that sent the data. When a seam cannot be secured, it goes to a human owner rather than being shipped. |
 

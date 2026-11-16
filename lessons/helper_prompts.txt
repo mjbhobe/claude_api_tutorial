@@ -1,0 +1,39 @@
+# Table image to markdown text
+-----------------------------------------
+Convert the image to markdown code that I can paste into my VS Code/Antigravity
+IDE/Cursor Markdown editor and view in Markdown preview.
+1. All columns should be left aligned
+2. Respect font-styles (bold. italic, smaller/larger fonts), ignore font colors and table
+backgrounds
+3. Do not include any citations (```[cite...])
+
+# 3 Cell Table (with image)
+----------------------------------------
+Convert the following image to 1 x 3 table markdown code that I can paste into my VS
+Code/Antigravity IDE/Cursor Markdown editor and view in Markdown preview.
+1. Respect font styles (bold/italic/pre etc.), font sizes and font colors, cell
+background colors, but ignore font names
+2. All columns should be left aligned
+3. Ignore the white table background - table should have no (transparent) background that
+can merge into the default dark theme I use with my IDE
+4. Do not include any citations (```[cite...])
+
+# 3 Cell Table (without image)
+----------------------------------------
+Generate markdown code for a 1 x 3 table that I can paste into my VS
+Code/Antigravity IDE/Cursor Markdown editor and view in Markdown preview using the image
+as a reference.
+1. Respect font styles (bold/italic/pre etc.), font sizes and font colors, cell
+background colors, but ignore font names
+2. All columns should be left aligned
+3. Ignore the white table background - table should have no (transparent) background that
+can merge into the default dark theme I use with my IDE
+4. Do not include any citations (```[cite...])
+5. Ignore the text shown in the image & use the text pasted below instead. Do not insert
+any blank lines (or HTML comments) betweeen HTML elements (fails to render properly in
+markdown preview in IDEs)
+
+<text_to_use>
+....
+</text_to_use>
+
