@@ -7,11 +7,11 @@
 > A consultant asked Claude to pull supporting statistics for a client market-sizing deck. Claude returned five clean figures with confident framing. Four were sound. One, a growth rate, was fabricated, plausible enough that nobody questioned it. The figures went into a deck, the deck went to a client, and the client's own analyst flagged the fabricated figure in the room.
 >
 > The ten minutes saved on research cost a credibility hit and a week of rebuilding trust. Nothing about the figure looked wrong on the screen. That is the problem this module is intended to solve: the cost of a missed error is not paid when you save the time, it is paid later, by someone whose trust you needed.
-> &nbsp;<br/><br/>
+> &nbsp;<br/>
 
 <span style="font-size: 1.15em;">_Claude saved you twenty minutes drafting an analysis. One fabricated figure in that analysis, sent to a client or a regulator, can cost far more than twenty minutes to undo._</span>
 
-This is the asymmetry at the center of professional AI use: the time saved is small and visible, and the cost of an unverified error is large and arrives later.
+**This is the asymmetry at the center of professional AI use:** the time saved is small and visible, and the cost of an unverified error is large and arrives later.
 
 **This is the largest section of the certification exam, and the reason is accountability**. When you put your name on a deliverable, you own every claim in it, whether you wrote the words or Claude did. This module gives you the discipline to stand behind AI-assisted work.
 

@@ -31,15 +31,15 @@ Claude appears in one interface, but that interface offers four distinct working
 
 ![Claude Entry Points](images/claude_entry_points.png)
 
-* **Chat**: Chat is the default entry point, an unstructured conversation. A Chat is saved to your history (the _lists_ that you see along the left side of the chat window) and can be continued later, and Memory plus past-chat search can carry key context into new sessions; what Chat does not give you is a Project's deliberate persistence, standing instructions and a curated knowledge base. Use Chat for one-off questions, quick drafts, exploratory prompting, and tasks you will not repeat. Chat works well for any task where the work starts and ends in that session. However, when you find yourself opening a new Chat by pasting the same background paragraph you pasted last week, that workstream has outgrown Chat.
+* **Chat**: Chat is the default entry point, an unstructured conversation. A Chat is saved to your history (the _lists_ that you see along the left side of the chat window) and can be continued later, and Memory plus past-chat search can carry key context into new sessions (new chat); what Chat does not give you is a Project's deliberate persistence, standing instructions and a curated knowledge base. Use Chat for one-off questions, quick drafts, exploratory prompting, and tasks you will not repeat. Chat works well for any task where the work starts and ends in that session. However, when you find yourself opening a new Chat by pasting the same background paragraph you pasted last week, that workstream has outgrown Chat.
 * **Projects**: Projects are persistent workspaces. A Project holds three things:
     * **Standing instructions**: what Claude should know and do consistently across every conversation in this space
     * **Knowledge base**: documents, policies, and reference files uploaded once so Claude can draw on them without re-uploading each session
     * **Conversation history**: each Project maintains its own conversation list, separate from your global conversation history. Conversations within a Project share the Project's instructions and knowledge base, but they do not share context with each other.
 
-    **Projects solve the most common productivity drain in AI-assisted professional work**: re-explaining the same background every session. Set the context once in the Project's standing instructions and knowledge base. Every conversation that follows starts with that context already in place.
+        **Projects solve the most common productivity drain in AI-assisted professional work**: re-explaining the same background every session. Set the context once in the Project's standing instructions and knowledge base. Every conversation that follows starts with that context already in place.
 
-    So assume I am responding to an RFP from a customer "Acme Inc". The documents they provide, which I will upload, will be my **Knowledge Base**. I will add a **Standing Instruction**.
+        So assume I am responding to an RFP from a customer "Acme Inc". The documents they provide, which I will upload, will be my **Knowledge Base**. I will add a **Standing Instruction**.
 
 * **Artifacts**: Artifacts are the right output format when the result is a deliverable rather than a conversational reply. When Claude produces an Artifact, it appears as a separate, editable block alongside the chat rather than flowing into the conversation thread. Use Artifacts for draft documents, data tables, formatted reports, and code. Use inline responses for answers you will act on within the conversation.
 
@@ -78,8 +78,9 @@ Memory retains work-relevant facts across sessions, removing the need to re-ente
 
 #### Memory curation
 
-Memory is most useful when actively curated. A memory that was accurate last quarter and has not been reviewed since can be actively misleading. Plan to:
+Memory is most useful when actively curated. A memory that was accurate last quarter and has not been reviewed since can be actively misleading. 
 
+Plan to:
 * Review stored memories periodically, at least once per month for active users
 * Delete or update entries that no longer hold
 * Keep the stored set focused on information that genuinely recurs across sessions

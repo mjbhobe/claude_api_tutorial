@@ -24,7 +24,7 @@ Naming the components turns prompting from guesswork into a checklist you can ru
 
 Not every prompt needs all five. A quick question needs a task and maybe a constraint. **A client deliverable needs all five**. The skill is noticing which components a given task requires.
 
-### Description in practice
+### Description in Practice
 
 The Description competency is the habit of making each component explicit instead of assuming Claude will infer it. Unless you connect a source through a Connector, Claude cannot see your inbox, your org chart, or last week's meeting, and even with a connector, Claude sees only what you have allowed it to access. Anything that lives only in your head or outside a connected source is a context gap, and context gaps are the single most common reason a prompt underperforms for new users.
 
@@ -61,9 +61,8 @@ Same model, same data. The second prompt produces a draft the analyst can refine
 > * `C`ontext: the background the model needs (e.g., "We are a mid-size Indian NBFC reviewing personal loan complaints")
 > * `T`ask: the Task, stated as a specific verb-led instruction (Summarize, extract, classify etc.)
 > * `R`ole: who Claude should act as (e.g., "a senior credit risk analyst")
- ('Classify', 'Summarize' etc.)
-> * `O`utput Format: how the output should look (table, JSON, bulleted list)
-> * `C`onstraints: tone, length, what to avoid)
+> * `O`utput Format: how the output should look (table, JSON, bulleted list, 4 paras)
+> * `C`onstraints: tone, length, what to avoid (focus only on 3 metrics etc.)
 
 ## Task Decomposition for Complex Requests
 
